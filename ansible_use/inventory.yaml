@@ -1,0 +1,11 @@
+---
+mymachines:
+  children: 
+    mgmntnode:
+      hosts:
+        mgmnt1:
+          ansible_connection: local
+
+
+
+  
