@@ -1,4 +1,5 @@
 ---
 - hosts: workernode
   roles:
-    - install_s4pred
+    - py_workernode
+

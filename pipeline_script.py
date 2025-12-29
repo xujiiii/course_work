@@ -13,7 +13,7 @@ def run_parser(hhr_file):
     """
     Run the results_parser.py over the hhr file to produce the output summary
     """
-    cmd = ['python', './results_parser.py', hhr_file]
+    cmd = ['python3.12', './results_parser.py', hhr_file]
     print(f'STEP 4: RUNNING PARSER: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
@@ -23,11 +23,20 @@ def run_hhsearch(a3m_file):
     """
     Run HHSearch to produce the hhr file
     """
-    hhsearch_location='/data/student/miniforge3/envs/test_xu/bin/hhsearch'
-    search_data='/data/student/xujia/Data/pdb70/pdb70'
-    cmd = [hhsearch_location,
-           '-i', a3m_file, '-cpu', '1', '-d', 
-           search_data]
+    #hhsearch_location='/data/student/miniforge3/envs/test_xu/bin/hhsearch'
+    
+    search_data='Data/pdb70/pdb70'
+   # cmd = [hhsearch_location,
+   #        '-i', a3m_file, '-cpu', '1', '-d', 
+  #         search_data]
+    
+    cmd= ["sudo","docker","run","--rm",
+          "-v","/home/almalinux:/app",
+          "-w", "/app",
+          "soedinglab/hh-suite:latest",
+          "hhsearch", "-i", a3m_file, "-cpu", "1", "-d", f"/app/{search_data}", 
+          "-o", "tmp.hhr"
+          ] 
     print(f'STEP 3: RUNNING HHSEARCH: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
@@ -55,14 +64,14 @@ def run_s4pred(input_file, out_file):
     """
     Runs the s4pred secondary structure predictor to produce the horiz file
     """
-    model_location='/data/student/xujia/s4pred/Applications/s4pred/run_model.py'
+    model_location='/home/almalinux/s4pred/Applications/s4pred/run_model.py'
     if os.path.exists(model_location):
         print(f'location for s4pred exists')
     else:
         print(f'no s4pred model exists')
         raise FileNotFoundError
     
-    cmd = ['python3', model_location,
+    cmd = ['python3.12', model_location,
            '-t', 'horiz', '-T', '1', input_file]
     print(f'STEP 1: RUNNING S4PRED: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)

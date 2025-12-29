@@ -5,7 +5,22 @@ mymachines:
       hosts:
         mgmnt1:
           ansible_connection: local
-
-
-
-  
+    workernode:
+      hosts:
+        worker1:
+          ansible_host: 10.134.12.58  
+        worker2:
+          ansible_host: 10.134.12.59
+        worker3:
+          ansible_host: 10.134.12.60
+        worker4:
+          ansible_host: 10.134.12.61
+        worker5:
+          ansible_host: 10.134.12.62
+      
+      vars:
+        ansible_user: almalinux
+        ansible_ssh_private_key_file: ~/.ssh/comp_test
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o UserKnownHostsFile=/dev/null

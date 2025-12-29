@@ -1,4 +1,4 @@
 ---
 - hosts: workernode
   roles:
-    - install_s4pred
+    - docker_download

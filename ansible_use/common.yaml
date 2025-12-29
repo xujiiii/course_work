@@ -1,4 +1,13 @@
 ---
 - hosts: mymachines
   roles:
-    -common
+    - common
+
+- hosts: workernode
+  roles:
+    - reboot
+
+- hosts: mymachines
+  roles:
+    - openmpi
+    - py312

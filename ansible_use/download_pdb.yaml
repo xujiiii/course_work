@@ -1,4 +1,4 @@
 ---
-- hosts: mgmntnode
+- hosts: workernode
   roles:
     - download_pdb70

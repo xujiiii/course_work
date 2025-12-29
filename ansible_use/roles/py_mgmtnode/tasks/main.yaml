@@ -1,0 +1,8 @@
+- name: Ensure pip packages are installed for Python 3.12
+  ansible.builtin.pip:
+    name:
+      - numpy
+      - pandas
+      - torch
+    executable: /usr/bin/python3.12 -m pip
+    state: present
