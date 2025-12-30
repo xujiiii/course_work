@@ -123,3 +123,11 @@
     name: rabbitmq-server
     enabled: yes
   become: yes
+- name: Create RabbitMQ user
+  ansible.builtin.shell: |
+    sudo rabbitmqctl list_users | grep -q "^pipeline\\s" || rabbitmqctl add_user pipeline pipeline123
+  become: yes
+- name: Set RabbitMQ user permissions
+  ansible.builtin.command: 
+    rabbitmqctl set_permissions -p / pipeline ".*" ".*" ".*"
+  become: yes
