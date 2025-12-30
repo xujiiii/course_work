@@ -51,3 +51,14 @@ def read_input(self,file):
     Function reads a fasta formatted file of protein sequences
     """
     pass
+
+@shared_task(bind=True)
+def derive_fasta_from_db(self,fasta_id):
+    pass
+
+@shared_task(bind=True)
+def create_folder(self,location):
+    """
+    Create a folder to run the pipeline with given id
+    """
+    pass
