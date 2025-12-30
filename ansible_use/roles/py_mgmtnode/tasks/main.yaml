@@ -2,7 +2,6 @@
   ansible.builtin.pip:
     name:
       - numpy
-      - pandas
-      - torch
-    executable: /usr/bin/python3.12 -m pip
+      - celery
+    executable: pip3.12
     state: present

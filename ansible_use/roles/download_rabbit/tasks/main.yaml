@@ -1,0 +1,125 @@
+- name: 导入 RabbitMQ 签名密钥
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc
+  become: yes
+- name: 导入 erlang 签名密钥
+  ansible.builtin.rpm_key:
+    state: present
+    key: 'https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key'
+  become: yes
+- name: 导入 RabbitMQ server 签名密钥
+  ansible.builtin.rpm_key:
+    state: present
+    key: 'https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-server.9F4587F226208342.key'
+  become: yes
+- name: set repo of rabbitmq and erlang
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/rabbitmq.repo
+    mode: '0644'
+    owner: root
+    group: root
+    content: |
+      [modern-erlang]
+      name=modern-erlang-el9
+      # Use a set of mirrors maintained by the RabbitMQ core team.
+      # The mirrors have significantly higher bandwidth quotas.
+      baseurl=https://yum1.rabbitmq.com/erlang/el/9/$basearch
+              https://yum2.rabbitmq.com/erlang/el/9/$basearch
+      repo_gpgcheck=1
+      enabled=1
+      gpgkey=https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
+      gpgcheck=1
+      sslverify=1
+      sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+      metadata_expire=300
+      pkg_gpgcheck=1
+      autorefresh=1
+      type=rpm-md
+
+      [modern-erlang-noarch]
+      name=modern-erlang-el9-noarch
+      # Use a set of mirrors maintained by the RabbitMQ core team.
+      # The mirrors have significantly higher bandwidth quotas.
+      baseurl=https://yum1.rabbitmq.com/erlang/el/9/noarch
+              https://yum2.rabbitmq.com/erlang/el/9/noarch
+      repo_gpgcheck=1
+      enabled=1
+      gpgkey=https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key
+            https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc
+      gpgcheck=1
+      sslverify=1
+      sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+      metadata_expire=300
+      pkg_gpgcheck=1
+      autorefresh=1
+      type=rpm-md
+
+
+      ##
+      ## RabbitMQ Server
+      ##
+
+      [rabbitmq-el9]
+      name=rabbitmq-el9
+      baseurl=https://yum2.rabbitmq.com/rabbitmq/el/9/$basearch
+              https://yum1.rabbitmq.com/rabbitmq/el/9/$basearch
+      repo_gpgcheck=1
+      enabled=1
+      # Cloudsmith's repository key and RabbitMQ package signing key
+      gpgkey=https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-server.9F4587F226208342.key
+            https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc
+      gpgcheck=1
+      sslverify=1
+      sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+      metadata_expire=300
+      pkg_gpgcheck=1
+      autorefresh=1
+      type=rpm-md
+
+      [rabbitmq-el9-noarch]
+      name=rabbitmq-el9-noarch
+      baseurl=https://yum2.rabbitmq.com/rabbitmq/el/9/noarch
+              https://yum1.rabbitmq.com/rabbitmq/el/9/noarch
+      repo_gpgcheck=1
+      enabled=1
+      # Cloudsmith's repository key and RabbitMQ package signing key
+      gpgkey=https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-server.9F4587F226208342.key
+            https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc
+      gpgcheck=1
+      sslverify=1
+      sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+      metadata_expire=300
+      pkg_gpgcheck=1
+      autorefresh=1
+      type=rpm-md
+  become: yes
+# 2. 对应 dnf install -y logrotate
+- name: 安装 logrotate 依赖
+  ansible.builtin.dnf:
+      name: logrotate
+      state: present
+  become: yes
+- name: 安装 erlang
+  ansible.builtin.dnf:
+    name: erlang
+    state: present
+  become: yes
+- name: 清理 DNF 缓存数据
+  ansible.builtin.dnf:
+    update_cache: yes
+- name: 安装 rabbitmq-server
+  ansible.builtin.dnf:
+    name: rabbitmq-server
+    state: present
+  become: yes
+- name: start rabbitmq-server
+  ansible.builtin.service:
+    name: rabbitmq-server
+    state: started
+  become: yes
+- name: enable rabbitmq-server
+  ansible.builtin.service:
+    name: rabbitmq-server
+    enabled: yes
+  become: yes

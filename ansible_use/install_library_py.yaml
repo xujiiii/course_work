@@ -2,4 +2,8 @@
 - hosts: workernode
   roles:
     - py_workernode
+  
+- hosts: mgmntnode
+  roles:
+    - py_mgmtnode
 
