@@ -1,15 +1,18 @@
-from pipeline_script import read_input, run_s4pred, read_horiz, run_hhsearch, run_parser
+from pipeline_script import read_input, run_s4pred, read_horiz, run_hhsearch, run_parser, derive_fasta_from_db, create_folder
 from celery import chain
 res = chain(
-    read_input.si("/home/almalinux/pipeline_example/test.fa").set(queue='tasks'),
-    run_s4pred.si("tmp.fas","tmp.horiz").set(queue='tasks'),
-    read_horiz.si("tmp.horiz","tmp.fas", "tmp.a3m").set(queue='tasks'),
-    run_hhsearch.si("tmp.a3m").set(queue='tasks'),
-    run_parser.si("tmp.hhr").set(queue='tasks')
+    create_folder.s("sp|Q9D4C1|LMTD1_MOUSE").set(queue='tasks'),
+    derive_fasta_from_db.s().set(queue='tasks'),
+    read_input.s().set(queue='tasks'),
+    run_s4pred.s().set(queue='tasks'),
+    read_horiz.s().set(queue='tasks'),
+    run_hhsearch.s().set(queue='tasks'),
+    run_parser.s().set(queue='tasks')
 ).apply_async(queue='tasks')
 
 print("pipeline id:", res.id)
-#print("final result:", res.get()) 
+
+
 import time
 current_node = res
 while current_node:

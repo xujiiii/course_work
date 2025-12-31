@@ -7,7 +7,9 @@ from subprocess import Popen, PIPE
 from Bio import SeqIO
 import shutil
 import os.path
-
+import psycopg2
+# celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
+#--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
 """
 usage: python pipeline_script.py INPUT.fasta  
 approx 5min per analysis
@@ -19,89 +21,95 @@ a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
 
 @shared_task(bind=True)
-def run_parser(self,hhr_file):
+def run_parser(self,location):
     """
     Run the results_parser.py over the hhr file to produce the output summary
     """
-    cmd = ['python3.12', './results_parser.py', hhr_file]
-    print(f'STEP 4: RUNNING PARSER: {" ".join(cmd)}')
-    p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
+    #hhr=os.path.join(location,hhr_file)
+    fuc_location='/home/almalinux/results_parser.py'
+    cmd = ['python3.12', fuc_location, hhr_file]
+    print(f'STEP 6: RUNNING PARSER: {" ".join(cmd)}')
+    p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE,cwd=location)
     out, err = p.communicate()
     print(out.decode("utf-8"))
-    return hhr_file
+    return f"All {location} success!!!"
 
 @shared_task(bind=True)
-def run_hhsearch(self,a3m_file):
+def run_hhsearch(self,location):
     """
     Run HHSearch to produce the hhr file
     """
     #hhsearch_location='/data/student/miniforge3/envs/test_xu/bin/hhsearch'
-    
+    global a3m_file
+    #a3m=os.path.join(location,a3m_file)
     search_data='Data/pdb70/pdb70'
-   # cmd = [hhsearch_location,
-   #        '-i', a3m_file, '-cpu', '1', '-d', 
-  #         search_data]
-    
     cmd= ["sudo","docker","run","--rm",
           "-v","/home/almalinux:/app",
+          "-v", f"{location}:/output", 
           "-w", "/app",
           "soedinglab/hh-suite:latest",
-          "hhsearch", "-i", a3m_file, "-cpu", "1", "-d", f"/app/{search_data}", 
-          "-o", "tmp.hhr"
+          "hhsearch", "-i", f"/output/{a3m_file}", "-cpu", "1", "-d", f"/app/{search_data}", 
+          "-o", f"/output/tmp.hhr"
           ] 
-    print(f'STEP 3: RUNNING HHSEARCH: {" ".join(cmd)}')
+    print(f'STEP 5: RUNNING HHSEARCH: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
-    return hhr_file
+    return location
 
 @shared_task(bind=True)
-def read_horiz(*args, **kwargs):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
+def read_horiz(self,location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
     """
     Parse horiz file and concatenate the information to a new tmp a3m file
     """
+    global tmp_file, horiz_file, a3m_file
     pred = ''
     conf = ''
-    print("STEP 2: REWRITING INPUT FILE TO A3M")
-    with open(horiz_file) as fh_in:
+    tmp=os.path.join(location,tmp_file)
+    horiz=os.path.join(location,horiz_file)
+    a3m=os.path.join(location,a3m_file)
+    print("STEP 4: REWRITING INPUT FILE TO A3M")
+    with open(horiz) as fh_in:
         for line in fh_in:
             if line.startswith('Conf: '):
                 conf += line[6:].rstrip()
             if line.startswith('Pred: '):
                 pred += line[6:].rstrip()
-    with open(tmp_file) as fh_in:
+    with open(tmp) as fh_in:
         contents = fh_in.read()
-    with open(a3m_file, "w") as fh_out:
+    with open(a3m, "w") as fh_out:
         fh_out.write(f">ss_pred\n{pred}\n>ss_conf\n{conf}\n")
         fh_out.write(contents)
-    return a3m_file
+    return location
 
 @shared_task(bind=True)
-def run_s4pred(self,input_file, out_file):
+def run_s4pred(self,location):
     """
     Runs the s4pred secondary structure predictor to produce the horiz file
     """
     model_location='/home/almalinux/s4pred/Applications/s4pred/run_model.py'
     if os.path.exists(model_location):
         print(f'location for s4pred exists')
-    else:
+    else: 
         print(f'no s4pred model exists')
         raise FileNotFoundError
-    
+    input_file=os.path.join(location,tmp_file)
+    out_file=os.path.join(location,horiz_file)
     cmd = ['python3.12', model_location,
            '-t', 'horiz', '-T', '1', input_file]
-    print(f'STEP 1: RUNNING S4PRED: {" ".join(cmd)}')
+    print(f'STEP 3: RUNNING S4PRED: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
     with open(out_file, "w") as fh_out:
         fh_out.write(out.decode("utf-8"))
-    return 11
+    return location
 
 @shared_task(bind=True)
-def read_input(self,file):
+def read_input(self,location):
     """
     Function reads a fasta formatted file of protein sequences
     """
-    print("READING FASTA FILES")
+    print("step2:READING FASTA FILES")
+    file=os.path.join(location,"tmp.fas")
     sequences = {}
     ids = []
     for record in SeqIO.parse(file, "fasta"):
@@ -110,18 +118,62 @@ def read_input(self,file):
         
     for k, v in (sequences).items(): 
         print(f'Now analysing input: {k}')
-        with open(tmp_file, "w") as fh_out:
+        with open(file, "w") as fh_out:
             fh_out.write(f">{k}\n")
             fh_out.write(f"{v}\n")
-    return "tmp.fas"
+    return location
 
 @shared_task(bind=True)
 def derive_fasta_from_db(self,fasta_id):
-    pass
+    print(f"Step1:Get the fasta file {fasta_id} form posgresql")
+    try:
+        # 1. 连接数据库
+        conn = psycopg2.connect(
+            database="pipeline",
+            user="postgres",
+            host="127.0.0.1", # 如果是远程连接需要指定
+            password="pipeline123",
+        )
+        cur = conn.cursor()
+
+        # 2. 执行查询 (使用占位符 %s 防止 SQL 注入)
+        query = "SELECT description, sequence FROM fasta_records WHERE seq_id = %s"
+        cur.execute(query, (fasta_id,))
+        
+        row = cur.fetchone()
+
+        if row:
+            description, sequence = row
+            # 3. 拼接成 FASTA 格式
+            fasta_content = f">{description}\n{sequence}\n"
+            
+            # 输出到屏幕
+            print(fasta_content)
+            
+            # 写入文件
+            with open(f"/tmp/pipeline/{fasta_id}/tmp.fas", "w") as f:
+                f.write(fasta_content)
+        else:
+            print(f"未找到 ID 为 {fasta_id} 的记录")
+
+    except Exception as e:
+        print(f"发生错误: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+        if 'conn' in locals(): conn.close()
+
+    return os.path.join("/tmp/pipeline", fasta_id)
 
 @shared_task(bind=True)
-def create_folder(self,location):
+def create_folder(self,fasta_id):
     """
-    Create a folder to run the pipeline with given id
+    Create a folder to run the pipeline with given id 
     """
-    pass
+    try:
+        print(f"Step0:Creating folder for pipeline run: {fasta_id}")
+        location=os.path.join("/tmp/pipeline",fasta_id)
+        os.makedirs(location, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating folder: {e}")
+        
+    return fasta_id
