@@ -8,3 +8,4 @@ create the folder for ansible to store temporal file
 
 hiiiiiii
 
+some nan includ in the results, dont know if it is bug or normal
