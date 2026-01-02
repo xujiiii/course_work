@@ -13,6 +13,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 # celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
 #--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
+# pkill -HUP -f "celery" kill celey
 """
 usage: python pipeline_script.py INPUT.fasta  
 approx 5min per analysis
@@ -92,7 +93,7 @@ def run_s4pred(location):
     if os.path.exists(model_location):
         logger.info(f'location for s4pred exists')
     else: 
-        logger.info(f'no s4pred model exists')
+        print(f'no s4pred model exists')
         raise FileNotFoundError
     input_file=os.path.join(location,tmp_file)
     out_file=os.path.join(location,horiz_file)
@@ -120,7 +121,7 @@ def read_input(location):
     for k, v in (sequences).items(): 
         logger.info(f'Now analysing input: {k}')
         with open(file, "w") as fh_out:
-            fh_out.write(f">{k}\n")
+            fh_out.write(f">{k}\n") 
             fh_out.write(f"{v}\n")
     return location
 
@@ -154,10 +155,10 @@ def derive_fasta_from_db(fasta_id):
             with open(f"/tmp/pipeline/{fasta_id}/tmp.fas", "w") as f:
                 f.write(fasta_content)
         else:
-            logger.info(f"未找到 ID 为 {fasta_id} 的记录")
+            print(f"未找到 ID 为 {fasta_id} 的记录")
 
     except Exception as e:
-        logger.info(f"发生错误: {e}")
+        print(f"发生错误: {e}")
     finally:
         if 'cur' in locals(): cur.close()
         if 'conn' in locals(): conn.close()
@@ -173,11 +174,11 @@ def create_folder(fasta_id):
         location=os.path.join("/tmp/pipeline",fasta_id)
         os.makedirs(location, exist_ok=True)
     except Exception as e:
-        logger.info(f"Error creating folder: {e}")
+        print(f"Error creating folder: {e}")
         
     return fasta_id
 
-@shared_task(bind=True)
+@shared_task(bind=True,acks_late=True)
 def workflow(self,fasta_id):
     """
     The complete pipeline workflow

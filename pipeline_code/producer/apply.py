@@ -34,5 +34,4 @@ if __name__ == "__main__":
             if clean_line:
                 res = workflow.apply_async(args=[clean_line], queue='tasks')
                 print(f"已分发 ID {clean_line[0:6]} -> Task ID: {res.id}")
-                #apply(clean_line)
-    
+                
