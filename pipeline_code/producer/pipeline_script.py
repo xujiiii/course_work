@@ -1,5 +1,5 @@
 from celery import Celery, shared_task
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='rpc://')
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://localhost:6379/0')
 
 """
 usage: python pipeline_script.py INPUT.fasta  
@@ -10,6 +10,11 @@ tmp_file = "tmp.fas"
 horiz_file = "tmp.horiz"
 a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
+
+@shared_task(bind=True,acks_late=True)
+def reduce_worker(self):
+    pass
+
 '''
 @shared_task(bind=True)
 def run_parser(self,hhr_file):
@@ -63,6 +68,6 @@ def create_folder(self,location):
     """
     pass
 '''
-@shared_task(bind=True)
+@shared_task(bind=True,acks_late=True)
 def workflow(self,fasta_id):
     pass

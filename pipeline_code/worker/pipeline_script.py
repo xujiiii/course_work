@@ -1,6 +1,5 @@
 from celery import Celery, shared_task
 import numpy as np
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='rpc://')
 import torch 
 import sys
 from subprocess import Popen, PIPE
@@ -9,8 +8,17 @@ import shutil
 import os.path
 import psycopg2
 from celery.utils.log import get_task_logger
+from kombu.common import Broadcast
+import csv
+import os
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
+
+app.conf.task_queues = (
+    Broadcast('map_broadcast'), # 定义广播队列
+)
 
 logger = get_task_logger(__name__)
+#celery -A pipeline_script worker   -Q tasks,map_broadcast   --loglevel=info   --concurrency=1   --prefetch-multiplier=1
 # celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
 #--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
 # pkill -HUP -f "celery" kill celey
@@ -23,6 +31,53 @@ tmp_file = "tmp.fas"
 horiz_file = "tmp.horiz"
 a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
+
+@shared_task(bind=True,acks_late=True)
+def reduce_worker(self,msg, base_dir="/tmp/pipeline", output_file="output_summary.csv"):
+    """
+    A simple task to reduce the number of workers
+    """
+    logger.info("Reducing Process is running")
+    print("Map is finished, now reducing is running")
+    print(msg)
+    all_rows = []
+    header = None
+
+    # os.walk 会遍历所有子目录
+    for root, dirs, files in os.walk(base_dir):
+        if "hhr_parse.out" in files:
+            file_path = os.path.join(root, "hhr_parse.out")
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                # 使用 csv.reader 处理 CSV 格式
+                reader = csv.reader(f)
+                try:
+                    current_header = next(reader) # 读取第一行（表头）
+                    
+                    # 第一次读取时，保存表头
+                    if header is None:
+                        header = current_header
+                    
+                    # 读取数据行
+                    for row in reader:
+                        if row: # 确保不是空行
+                            all_rows.append(row)
+                except StopIteration:
+                    # 如果文件是空的，跳过
+                    continue
+
+    if not all_rows:
+        print("未发现有效数据。")
+        return
+
+    # 将汇总结果写入新文件
+    with open(output_file, 'w', encoding='utf-8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)  # 写入统一的表头
+        writer.writerows(all_rows) # 写入所有数据行
+
+    print(f"聚合完成！汇总了 {len(all_rows)} 条记录到 {output_file}")
+    return "Worker reduced by 1"
 
 
 def run_parser(location):

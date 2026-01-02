@@ -1,8 +1,9 @@
 #from pipeline_script import read_input, run_s4pred, read_horiz, run_hhsearch, run_parser, derive_fasta_from_db, create_folder
-from pipeline_script import workflow
+from pipeline_script import workflow,reduce_worker
 from celery import chain
 import sys
 import os
+from celery import chord
 '''
 def apply(clean_line):
     res = chain(
@@ -22,10 +23,13 @@ def apply(clean_line):
 
 if __name__ == "__main__":
     fasta_ids_location=sys.argv[1]
+    output_table=sys.argv[2]
     if os.path.exists(fasta_ids_location)==False:
         print(f"File {fasta_ids_location} does not exist.")
         sys.exit(1)
     with open(fasta_ids_location, 'r', encoding='utf-8') as file:
+        res = [workflow.s(line.strip()).set(queue='tasks') for line in file if line.strip()]
+        '''
         for line in file:
             # 使用 strip() 去掉每一行末尾的换行符 \n
             clean_line = line.strip()
@@ -34,4 +38,7 @@ if __name__ == "__main__":
             if clean_line:
                 res = workflow.apply_async(args=[clean_line], queue='tasks')
                 print(f"已分发 ID {clean_line[0:6]} -> Task ID: {res.id}")
-                
+        '''  
+        reduce= reduce_worker.s().set(queue='map_broadcast')
+        chord(res)(reduce) 
+    print(f"output table name is {output_table}")
