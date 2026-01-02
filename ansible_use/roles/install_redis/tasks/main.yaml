@@ -1,0 +1,63 @@
+- name: set repo of redis
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/rabbitmq.repo
+    mode: '0644'
+    owner: root
+    group: root
+    content: |
+      [Redis]
+      name=Redis
+      baseurl=http://packages.redis.io/rpm/rockylinux9
+      enabled=1
+      gpgcheck=1
+  become: yes
+- name: 下载 Redis GPG Key
+  get_url:
+    url: https://packages.redis.io/gpg
+    dest: /tmp/redis.key
+    mode: '0644'
+  become: yes
+- name: 导入 Redis GPG Key
+  rpm_key:
+    state: present
+    key: /tmp/redis.key
+  become: yes
+- name: install rpm package redis
+  ansible.builtin.yum:
+    name: redis
+    state: present
+  become: yes
+- name: 强制杀死所有 Redis 进程
+  shell: "pkill -9 -x redis-server || true"
+  ignore_errors: yes
+  become: yes
+- name: ensure redis is started and enabled
+  ansible.builtin.service:
+    name: redis
+    state: started
+    enabled: yes
+  become: yes
+- name: 将 protected-mode 改为 no
+  lineinfile:
+    path: /etc/redis/redis.conf
+    # 正则解释：匹配开头可能是空格或注释符(#)，紧跟 protected-mode，后面是 yes
+    regexp: '^[#\s]*protected-mode\s+yes'
+    line: 'protected-mode no'
+    state: present
+  become: yes
+- name: 强制修改 bind 配置，允许所有网络访问
+  replace:
+    path: /etc/redis/redis.conf
+    # 正则表达式解释：
+    # ^[#\s]* : 匹配行首可能存在的注释符 # 或空格
+    # bind\s+   : 匹配关键字 bind 及其后的空格
+    # 127\.0\.1 : 匹配本地回环地址（点号需要转义）
+    # .* : 匹配该行剩下的所有内容（包括 -::1）
+    regexp: '^[#\s]*bind\s+127\.0\.0\.1.*'
+    replace: 'bind 0.0.0.0'
+  become: yes
+- name: Restart redis
+  ansible.builtin.service:
+    name: redis
+    state: restarted
+  become: yes

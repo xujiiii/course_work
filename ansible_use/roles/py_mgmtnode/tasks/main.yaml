@@ -3,6 +3,7 @@
     name:
       - numpy
       - celery
+      - redis
     executable: pip3.12
     state: present
   become: yes
