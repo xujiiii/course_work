@@ -11,6 +11,9 @@ from celery.utils.log import get_task_logger
 from kombu.common import Broadcast
 import csv
 import os
+from celery.signals import worker_init
+import shutil
+from pathlib import Path
 app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
 
 app.conf.task_queues = (
@@ -18,6 +21,7 @@ app.conf.task_queues = (
 )
 
 logger = get_task_logger(__name__)
+#ps aux | grep celery
 #celery -A pipeline_script worker   -Q tasks,map_broadcast   --loglevel=info   --concurrency=1   --prefetch-multiplier=1
 # celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
 #--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
@@ -33,7 +37,7 @@ a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
 
 @shared_task(bind=True,acks_late=True)
-def reduce_worker(self,msg, base_dir="/tmp/pipeline", output_file="output_summary.csv"):
+def reduce_worker(self,msg, base_dir="/tmp/pipeline", output_file="/tmp/pipeline/output_summary.csv"):
     """
     A simple task to reduce the number of workers
     """
@@ -233,6 +237,7 @@ def create_folder(fasta_id):
         
     return fasta_id
 
+
 @shared_task(bind=True,acks_late=True)
 def workflow(self,fasta_id):
     """
@@ -246,3 +251,41 @@ def workflow(self,fasta_id):
     hhsearch_location = run_hhsearch(horiz_location)
     final_result = run_parser(hhsearch_location)
     return final_result
+
+def clear_folder_contents(folder_path):
+    """
+    删除指定文件夹下的所有内容（文件和子文件夹），但保留根目录本身。
+    """
+    path = Path(folder_path)
+    
+    if not path.exists():
+        print(f"提示：路径 {folder_path} 不存在，无需清理。")
+        return
+
+    print(f"开始清理文件夹: {folder_path}")
+    
+    # 遍历文件夹下的所有项
+    for item in path.iterdir():
+        try:
+            if item.is_file() or item.is_symlink():
+                item.unlink()  # 删除文件或符号链接
+                print(f"已删除文件: {item.name}")
+            elif item.is_dir():
+                shutil.rmtree(item)  # 递归删除子文件夹
+                print(f"已删除目录: {item.name}")
+        except Exception as e:
+            # 这里的异常处理非常重要，防止 Worker 因为一个文件删不掉而死循环重启
+            print(f"错误：无法删除 {item}，原因: {e}")
+
+#before celery started,it will clean the work folder /tmp/pipeline
+@worker_init.connect
+def bootstrap_worker(sender, **kwargs):
+    """
+    sender: 指向当前的 Worker 实例
+    这个函数会在每个 Worker 进程启动后、开始接收任务前执行
+    """
+    print(f"信号触发：Worker {sender} 正在进行前置准备...")
+    
+    clear_folder_contents("/tmp/pipeline")
+    
+    print(f"Worker {sender} is ready, work folder is clean")
