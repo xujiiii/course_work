@@ -8,6 +8,9 @@ from Bio import SeqIO
 import shutil
 import os.path
 import psycopg2
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
 # celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
 #--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
 """
@@ -28,10 +31,10 @@ def run_parser(location):
     #hhr=os.path.join(location,hhr_file)
     fuc_location='/home/almalinux/results_parser.py'
     cmd = ['python3.12', fuc_location, hhr_file]
-    print(f'STEP 6: RUNNING PARSER: {" ".join(cmd)}')
+    logger.info(f'STEP 6: RUNNING PARSER: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE,cwd=location)
     out, err = p.communicate()
-    print(out.decode("utf-8"))
+    logger.info(out.decode("utf-8"))
     return f"All {location} success!!!"
 
 
@@ -51,7 +54,7 @@ def run_hhsearch(location):
           "hhsearch", "-i", f"/output/{a3m_file}", "-cpu", "1", "-d", f"/app/{search_data}", 
           "-o", f"/output/tmp.hhr"
           ] 
-    print(f'STEP 5: RUNNING HHSEARCH: {" ".join(cmd)}')
+    logger.info(f'STEP 5: RUNNING HHSEARCH: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
     return location
@@ -67,7 +70,7 @@ def read_horiz(location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
     tmp=os.path.join(location,tmp_file)
     horiz=os.path.join(location,horiz_file)
     a3m=os.path.join(location,a3m_file)
-    print("STEP 4: REWRITING INPUT FILE TO A3M")
+    logger.info("STEP 4: REWRITING INPUT FILE TO A3M")
     with open(horiz) as fh_in:
         for line in fh_in:
             if line.startswith('Conf: '):
@@ -87,15 +90,15 @@ def run_s4pred(location):
     """
     model_location='/home/almalinux/s4pred/Applications/s4pred/run_model.py'
     if os.path.exists(model_location):
-        print(f'location for s4pred exists')
+        logger.info(f'location for s4pred exists')
     else: 
-        print(f'no s4pred model exists')
+        logger.info(f'no s4pred model exists')
         raise FileNotFoundError
     input_file=os.path.join(location,tmp_file)
     out_file=os.path.join(location,horiz_file)
     cmd = ['python3.12', model_location,
            '-t', 'horiz', '-T', '1', input_file]
-    print(f'STEP 3: RUNNING S4PRED: {" ".join(cmd)}')
+    logger.info(f'STEP 3: RUNNING S4PRED: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
     with open(out_file, "w") as fh_out:
@@ -106,7 +109,7 @@ def read_input(location):
     """
     Function reads a fasta formatted file of protein sequences
     """
-    print("step2:READING FASTA FILES")
+    logger.info("step2:READING FASTA FILES")
     file=os.path.join(location,"tmp.fas")
     sequences = {}
     ids = []
@@ -115,14 +118,14 @@ def read_input(location):
         ids.append(record.id)
         
     for k, v in (sequences).items(): 
-        print(f'Now analysing input: {k}')
+        logger.info(f'Now analysing input: {k}')
         with open(file, "w") as fh_out:
             fh_out.write(f">{k}\n")
             fh_out.write(f"{v}\n")
     return location
 
 def derive_fasta_from_db(fasta_id):
-    print(f"Step1:Get the fasta file {fasta_id} form posgresql")
+    logger.info(f"Step1:Get the fasta file {fasta_id} form posgresql")
     try:
         # 1. 连接数据库
         conn = psycopg2.connect(
@@ -145,16 +148,16 @@ def derive_fasta_from_db(fasta_id):
             fasta_content = f">{description}\n{sequence}\n"
             
             # 输出到屏幕
-            print(fasta_content)
+            logger.info(fasta_content)
             
             # 写入文件
             with open(f"/tmp/pipeline/{fasta_id}/tmp.fas", "w") as f:
                 f.write(fasta_content)
         else:
-            print(f"未找到 ID 为 {fasta_id} 的记录")
+            logger.info(f"未找到 ID 为 {fasta_id} 的记录")
 
     except Exception as e:
-        print(f"发生错误: {e}")
+        logger.info(f"发生错误: {e}")
     finally:
         if 'cur' in locals(): cur.close()
         if 'conn' in locals(): conn.close()
@@ -166,11 +169,11 @@ def create_folder(fasta_id):
     Create a folder to run the pipeline with given id 
     """
     try:
-        print(f"Step0:Creating folder for pipeline run: {fasta_id}")
+        logger.info(f"Step0:Creating folder for pipeline run: {fasta_id}")
         location=os.path.join("/tmp/pipeline",fasta_id)
         os.makedirs(location, exist_ok=True)
     except Exception as e:
-        print(f"Error creating folder: {e}")
+        logger.info(f"Error creating folder: {e}")
         
     return fasta_id
 

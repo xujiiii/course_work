@@ -40,11 +40,11 @@ def run_s4pred(self,input_file, out_file):
     Runs the s4pred secondary structure predictor to produce the horiz file
     """
     pass
-'''
+
 @shared_task(bind=True)    
 def read_tmp(self,sequences,tmp_file):
     pass
-'''
+
 @shared_task(bind=True)
 def read_input(self,file):
     """
