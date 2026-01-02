@@ -1,0 +1,58 @@
+- name: Ensure postgresql is at the latest version
+  ansible.builtin.dnf:
+    name: postgresql
+    state: latest
+  become: yes
+- name: Ensure postgresql-server
+  ansible.builtin.dnf:
+    name: postgresql-server
+    state: latest
+  become: yes
+- name: Ensure postgresql-contrib is at the latest version
+  ansible.builtin.dnf:
+    name: postgresql-contrib
+    state: latest
+  become: yes
+- name: Ensure postgresql-devel is at the latest version
+  ansible.builtin.dnf:
+    name: postgresql-devel
+    state: latest
+  become: yes
+- name: "Find out if PostgreSQL is initialized"
+  ansible.builtin.stat:
+    path: "/var/lib/pgsql/data/pg_hba.conf"
+  register: postgres_data
+  become: yes
+- name: initialise db
+  shell: "/usr/bin/postgresql-setup --initdb"
+  when: not postgres_data.stat.exists
+  become: yes
+- name: Ensure that postgresql is started
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+  become: yes
+- name: 给 postgres 用户设置密码
+  community.general.postgresql_user:
+    name: postgres
+    password: "{{ db_pass }}"
+  become: yes
+  become_user: postgres
+- name: 1. 将 IPv4 本地连接的 ident 修改为 md5
+  ansible.builtin.lineinfile:
+    path: "{{ pg_hba_path }}"
+    regexp: '^host\s+all\s+all\s+127\.0\.0\.1/32\s+ident'
+    line: "host    all             all             127.0.0.1/32            md5"
+    backrefs: yes
+  become: yes
+- name: 2. 将 IPv6 本地连接的 ident 修改为 md5
+  ansible.builtin.lineinfile:
+    path: "{{ pg_hba_path }}"
+    regexp: '^host\s+all\s+all\s+::1/128\s+ident'
+    line: "host    all             all             ::1/128                 md5"
+  become: yes  
+- name: Ensure that postgresql is started
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+  become: yes

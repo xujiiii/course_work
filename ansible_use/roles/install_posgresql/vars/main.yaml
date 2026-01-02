@@ -1,0 +1,3 @@
+---
+db_pass: pipeline123
+pg_hba_path: /var/lib/pgsql/data/pg_hba.conf

@@ -1,0 +1,5 @@
+---
+db_name: "pipeline"
+remote_data_dir: "/tmp/fasta_import"
+local_fasta_path: "/home/almalinux/course/course_work/UP000000589_10090.fasta"  
+ansible_python_interpreter: /usr/bin/python3.12

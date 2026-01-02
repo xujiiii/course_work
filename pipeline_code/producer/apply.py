@@ -1,0 +1,35 @@
+#from pipeline_script import read_input, run_s4pred, read_horiz, run_hhsearch, run_parser, derive_fasta_from_db, create_folder
+from pipeline_script import workflow,reduce_worker
+from celery import chain
+import sys
+import os
+from celery import chord
+# python3.12 ./apply.py /home/almalinux/course/course_work/test_id.txt hiii
+'''
+def apply(clean_line):
+    res = chain(
+        create_folder.s(clean_line).set(queue='tasks'),
+        derive_fasta_from_db.s().set(queue='tasks'),
+        read_input.s().set(queue='tasks'),
+        run_s4pred.s().set(queue='tasks'),
+        read_horiz.s().set(queue='tasks'),
+        run_hhsearch.s().set(queue='tasks'),
+        run_parser.s().set(queue='tasks')
+    ).apply_async(queue='tasks')
+
+    print("pipeline id:", res.id)
+'''
+#def apply(clean_line):
+ #   workflow.apply_async(args=[clean_line], queue='tasks')
+
+if __name__ == "__main__":
+    fasta_ids_location=sys.argv[1]
+    output_table=sys.argv[2]
+    if os.path.exists(fasta_ids_location)==False:
+        print(f"File {fasta_ids_location} does not exist.")
+        sys.exit(1)
+    with open(fasta_ids_location, 'r', encoding='utf-8') as file:
+        res = [workflow.s(line.strip()).set(queue='tasks') for line in file if line.strip()]
+        reduce= reduce_worker.s().set(queue='map_broadcast')
+        chord(res)(reduce) 
+    print(f"output table name is {output_table}")

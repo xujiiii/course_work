@@ -1,0 +1,4 @@
+---
+- hosts: workernode
+  roles:
+    - assign_pipeline_code

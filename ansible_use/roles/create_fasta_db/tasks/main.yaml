@@ -1,0 +1,44 @@
+#  db_name: "genomics_db"
+ #   remote_data_dir: "/tmp/fasta_import"
+#    local_fasta_path: "./my_data.fasta"  # 你本地 FASTA 的路径
+- name: Ensure pip packages are installed for Python 3.12
+  ansible.builtin.pip:
+    name:
+      - psycopg2
+      - biopython
+    executable: pip3.12
+    state: present
+  become: yes
+- name: 在 PostgreSQL 中创建数据库
+  become_user: postgres
+  postgresql_db:
+    name: "{{ db_name }}"
+    state: present
+  become: yes
+- name: 创建远程临时目录
+  file:
+    path: "{{ remote_data_dir }}"
+    state: directory
+    mode: '0755'
+- name: 分发 FASTA 文件和解析脚本到 Worker
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - { src: "{{ local_fasta_path }}", dest: "{{ remote_data_dir }}/data.fasta" }
+    - { src: "./import_fasta.py", dest: "{{ remote_data_dir }}/import_fasta.py" }
+
+- name: 执行导入脚本
+  become_user: postgres
+  command: "python3.12 {{ remote_data_dir }}/import_fasta.py {{ db_name }} {{ remote_data_dir }}/data.fasta"
+  register: import_result
+  become: yes
+
+- name: 显示导入结果
+  debug:
+    msg: "导入任务已完成！"
+
+- name: 清理远程大型 FASTA 文件 (可选)
+  file:
+    path: "{{ remote_data_dir }}/data.fasta"
+    state: absent

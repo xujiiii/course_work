@@ -1,0 +1,5 @@
+---
+- hosts: workernode
+  roles:
+    - install_posgresql
+    - create_fasta_db
