@@ -20,8 +20,8 @@ horiz_file = "tmp.horiz"
 a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
 
-@shared_task(bind=True)
-def run_parser(self,location):
+
+def run_parser(location):
     """
     Run the results_parser.py over the hhr file to produce the output summary
     """
@@ -34,8 +34,8 @@ def run_parser(self,location):
     print(out.decode("utf-8"))
     return f"All {location} success!!!"
 
-@shared_task(bind=True)
-def run_hhsearch(self,location):
+
+def run_hhsearch(location):
     """
     Run HHSearch to produce the hhr file
     """
@@ -56,8 +56,8 @@ def run_hhsearch(self,location):
     out, err = p.communicate()
     return location
 
-@shared_task(bind=True)
-def read_horiz(self,location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
+
+def read_horiz(location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
     """
     Parse horiz file and concatenate the information to a new tmp a3m file
     """
@@ -81,8 +81,7 @@ def read_horiz(self,location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwar
         fh_out.write(contents)
     return location
 
-@shared_task(bind=True)
-def run_s4pred(self,location):
+def run_s4pred(location):
     """
     Runs the s4pred secondary structure predictor to produce the horiz file
     """
@@ -103,8 +102,7 @@ def run_s4pred(self,location):
         fh_out.write(out.decode("utf-8"))
     return location
 
-@shared_task(bind=True)
-def read_input(self,location):
+def read_input(location):
     """
     Function reads a fasta formatted file of protein sequences
     """
@@ -123,8 +121,7 @@ def read_input(self,location):
             fh_out.write(f"{v}\n")
     return location
 
-@shared_task(bind=True)
-def derive_fasta_from_db(self,fasta_id):
+def derive_fasta_from_db(fasta_id):
     print(f"Step1:Get the fasta file {fasta_id} form posgresql")
     try:
         # 1. 连接数据库
@@ -164,8 +161,7 @@ def derive_fasta_from_db(self,fasta_id):
 
     return os.path.join("/tmp/pipeline", fasta_id)
 
-@shared_task(bind=True)
-def create_folder(self,fasta_id):
+def create_folder(fasta_id):
     """
     Create a folder to run the pipeline with given id 
     """
@@ -177,3 +173,17 @@ def create_folder(self,fasta_id):
         print(f"Error creating folder: {e}")
         
     return fasta_id
+
+@shared_task(bind=True)
+def workflow(self,fasta_id):
+    """
+    The complete pipeline workflow
+    """
+    folder_location = create_folder(fasta_id)
+    fasta_location = derive_fasta_from_db(folder_location)
+    input_location = read_input(fasta_location)
+    s4pred_location = run_s4pred(input_location)
+    horiz_location = read_horiz(s4pred_location)
+    hhsearch_location = run_hhsearch(horiz_location)
+    final_result = run_parser(hhsearch_location)
+    return final_result

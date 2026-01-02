@@ -10,7 +10,7 @@ tmp_file = "tmp.fas"
 horiz_file = "tmp.horiz"
 a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
-
+'''
 @shared_task(bind=True)
 def run_parser(self,hhr_file):
     """
@@ -61,4 +61,8 @@ def create_folder(self,location):
     """
     Create a folder to run the pipeline with given id
     """
+    pass
+'''
+@shared_task(bind=True)
+def workflow(self,fasta_id):
     pass
