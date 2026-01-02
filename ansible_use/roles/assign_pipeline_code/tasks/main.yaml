@@ -1,0 +1,12 @@
+- name: copy pipeline code to workers
+  ansible.builtin.copy:
+    src: "/home/almalinux/course/course_work/pipeline_code/worker/pipeline_script.py"
+    dest: "/home/almalinux/pipeline_script.py"
+  become: true
+  become_user: root
+- name: copy parser code to workers
+  ansible.builtin.copy:
+    src: "/home/almalinux/course/course_work/results_parser.py"
+    dest: "/home/almalinux/results_parser.py"
+  become: true 
+  become_user: root
