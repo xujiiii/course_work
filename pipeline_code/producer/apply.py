@@ -24,5 +24,7 @@ if __name__ == "__main__":
     with open(fasta_ids_location, 'r', encoding='utf-8') as file:
         res = [workflow.s(line.strip(),output_table).set(queue='tasks') for line in file if line.strip()]
         reduce= reduce_worker.s(output_table).set(queue='map_broadcast')
-        chord(res)(reduce) 
+        
+        full=chord(res)(reduce)
+        print(full.get()) 
     print(f"output table name is {output_table}")

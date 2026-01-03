@@ -18,6 +18,7 @@ import shutil
 from pathlib import Path
 app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
 import pandas as pd
+import socket
 app.conf.task_queues = (
     Broadcast('map_broadcast'), # 定义广播队列
 )
@@ -61,7 +62,8 @@ def reduce_worker(self,msg,output_file):
     ave_gmean = combined_df['score_gmean'].mean()
     profile_output= pd.DataFrame({
         'avg_std': [ave_std],
-        'avg_gmean': [ave_gmean]
+        'avg_gmean': [ave_gmean],
+        'count': [len(combined_df)]
     })
     
     # 3. 结果汇总 1：保存总表
@@ -72,7 +74,7 @@ def reduce_worker(self,msg,output_file):
     overall_avg_score = combined_df['best_score'].mean()
     print(f"聚合完成！共处理 {len(all_files)} 个文件。")
     print(f"所有结果的 best_score 平均值: {overall_avg_score:.2f}")
-             
+    return "hahahahaah"
 
 def run_parser(location,output_location,fasta_id):
     """
@@ -291,3 +293,67 @@ def bootstrap_worker(sender, **kwargs):
     clear_folder_contents("/tmp/pipeline")
     
     print(f"Worker {sender} is ready, work folder is clean")
+
+
+@shared_task(bind=True,acks_late=True)
+def get_results(self,msg,name):
+    hostname = socket.gethostname()
+    local_path = f"/tmp/pipeline_output/{name}"
+    output = f"{local_path}/output.csv"
+    hits_output = f"{local_path}/hits_output.csv"
+    profile_output = f"{local_path}/profile_output.csv"
+
+    # 1. 如果本地没有，则执行计算逻辑 (这里调用你之前的计算函数)
+    if not os.path.exists(output):
+        # run_actual_calc(table_name) 
+        search_path = os.path.join(local_path, "*.out")
+        all_files = glob.glob(search_path)
+        if not all_files:
+            print("未找到任何 .out 文件")
+            return
+    
+        # 2. 读取并合并
+        # 使用列表推导式一次性读取所有文件
+        df_list = [pd.read_csv(f) for f in all_files]
+        combined_df = pd.concat(df_list, ignore_index=True)
+        #calculate the hits results
+        hits_output=combined_df[['query_id','best_hit']].copy()
+        hits_output=hits_output.rename(columns={"query_id":'fasta_id','best_hit':'best_hit_id'})
+        #calculate avg_mean and avg_std 
+        ave_std = combined_df['score_std'].mean()
+        ave_gmean = combined_df['score_gmean'].mean()
+        profile_output= pd.DataFrame({
+            'avg_std': [ave_std],
+            'avg_gmean': [ave_gmean],
+            'count': [len(combined_df)]
+        })
+        
+        # 3. 结果汇总：保存总表
+        combined_df.to_csv(os.path.join(local_path,"output.csv"), index=False)
+        hits_output.to_csv(os.path.join(local_path,"hits_output.csv"), index=False)
+        profile_output.to_csv(os.path.join(local_path,"profile_output.csv"), index=False)
+  
+  
+    df_p = pd.read_csv(f"{local_path}/profile_output.csv")
+    df_b = pd.read_csv(f"{local_path}/hits_output.csv")
+
+    # 3. 返回内存对象（不占磁盘）
+    return {
+        "worker": hostname,
+        "profile_output": df_b[['fasta_id', 'best_hit_id']].to_dict('records'),
+        "hits_output": {
+            "avg_std": float(df_p['avg_std'].iloc[0]),
+            "avg_gmean": float(df_p['avg_gmean'].iloc[0]),
+            "count": int(df_p['count'].iloc[0]) 
+        }
+    }
+    
+ 
+def together(self,name):
+    ress=get_results.apply_async(args=[None, name], queue='map_broadcast')
+    
+    res=ress.get()
+    
+    for re in res:
+        print(res)
+  

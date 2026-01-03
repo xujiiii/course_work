@@ -71,3 +71,7 @@ def create_folder(self,location):
 @shared_task(bind=True,acks_late=True)
 def workflow(self,fasta_id,output_location):
     pass
+
+@shared_task(bind=True,acks_late=True)
+def get_results(self,msg,name):
+    pass
