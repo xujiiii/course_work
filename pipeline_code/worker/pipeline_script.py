@@ -10,12 +10,14 @@ import psycopg2
 from celery.utils.log import get_task_logger
 from kombu.common import Broadcast
 import csv
+import glob
+import pandas as pd
 import os
 from celery.signals import worker_init
 import shutil
 from pathlib import Path
 app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
-
+import pandas as pd
 app.conf.task_queues = (
     Broadcast('map_broadcast'), # 定义广播队列
 )
@@ -37,54 +39,42 @@ a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
 
 @shared_task(bind=True,acks_late=True)
-def reduce_worker(self,msg, base_dir="/tmp/pipeline", output_file="/tmp/pipeline/output_summary.csv"):
-    """
-    A simple task to reduce the number of workers
-    """
-    logger.info("Reducing Process is running")
-    print("Map is finished, now reducing is running")
-    print(msg)
-    all_rows = []
-    header = None
-
-    # os.walk 会遍历所有子目录
-    for root, dirs, files in os.walk(base_dir):
-        if "hhr_parse.out" in files:
-            file_path = os.path.join(root, "hhr_parse.out")
-            
-            with open(file_path, 'r', encoding='utf-8') as f:
-                # 使用 csv.reader 处理 CSV 格式
-                reader = csv.reader(f)
-                try:
-                    current_header = next(reader) # 读取第一行（表头）
-                    
-                    # 第一次读取时，保存表头
-                    if header is None:
-                        header = current_header
-                    
-                    # 读取数据行
-                    for row in reader:
-                        if row: # 确保不是空行
-                            all_rows.append(row)
-                except StopIteration:
-                    # 如果文件是空的，跳过
-                    continue
-
-    if not all_rows:
-        print("未发现有效数据。")
+def reduce_worker(self,msg,output_file):
+# 1. 获取所有以 .out 结尾的文件路径
+    output_file=os.path.join("/tmp/pipeline_output",output_file)
+    search_path = os.path.join(output_file, "*.out")
+    all_files = glob.glob(search_path)
+    
+    if not all_files:
+        print("未找到任何 .out 文件")
         return
 
-    # 将汇总结果写入新文件
-    with open(output_file, 'w', encoding='utf-8', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(header)  # 写入统一的表头
-        writer.writerows(all_rows) # 写入所有数据行
+    # 2. 读取并合并
+    # 使用列表推导式一次性读取所有文件
+    df_list = [pd.read_csv(f) for f in all_files]
+    combined_df = pd.concat(df_list, ignore_index=True)
+    #calculate the hits results
+    hits_output=combined_df[['query_id','best_hit']].copy()
+    hits_output=hits_output.rename(columns={"query_id":'fasta_id','best_hit':'best_hit_id'})
+    #calculate avg_mean and avg_std 
+    ave_std = combined_df['score_std'].mean()
+    ave_gmean = combined_df['score_gmean'].mean()
+    profile_output= pd.DataFrame({
+        'avg_std': [ave_std],
+        'avg_gmean': [ave_gmean]
+    })
+    
+    # 3. 结果汇总 1：保存总表
+    combined_df.to_csv(os.path.join(output_file,"output.csv"), index=False)
+    hits_output.to_csv(os.path.join(output_file,"hits_output.csv"), index=False)
+    profile_output.to_csv(os.path.join(output_file,"profile_output.csv"), index=False)
+    # 4. 结果汇总 2：计算平均值并打印（供 Host 查看）
+    overall_avg_score = combined_df['best_score'].mean()
+    print(f"聚合完成！共处理 {len(all_files)} 个文件。")
+    print(f"所有结果的 best_score 平均值: {overall_avg_score:.2f}")
+             
 
-    print(f"聚合完成！汇总了 {len(all_rows)} 条记录到 {output_file}")
-    return "Worker reduced by 1"
-
-
-def run_parser(location):
+def run_parser(location,output_location,fasta_id):
     """
     Run the results_parser.py over the hhr file to produce the output summary
     """
@@ -95,6 +85,11 @@ def run_parser(location):
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE,cwd=location)
     out, err = p.communicate()
     logger.info(out.decode("utf-8"))
+    src_path=os.path.join(location,"hhr_parse.out")
+    dest_path=os.path.join("/tmp/pipeline_output",output_location)
+    dest_path=os.path.join(dest_path,f"{fasta_id}.out")
+    shutil.copy(src_path, dest_path)
+    logger.info(f"Sucessfully copy out file to output location")
     return f"All {location} success!!!"
 
 
@@ -224,7 +219,7 @@ def derive_fasta_from_db(fasta_id):
 
     return os.path.join("/tmp/pipeline", fasta_id)
 
-def create_folder(fasta_id):
+def create_folder(fasta_id,output_location):
     """
     Create a folder to run the pipeline with given id 
     """
@@ -235,21 +230,28 @@ def create_folder(fasta_id):
     except Exception as e:
         print(f"Error creating folder: {e}")
         
+    try:
+        logger.info(f"Step0:check output folder is created: {output_location}")
+        location=os.path.join("/tmp/pipeline_output",output_location)
+        os.makedirs(location, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating folder: {e}")
+    
     return fasta_id
 
 
 @shared_task(bind=True,acks_late=True)
-def workflow(self,fasta_id):
+def workflow(self,fasta_id,output_location):
     """
     The complete pipeline workflow
     """
-    folder_location = create_folder(fasta_id)
-    fasta_location = derive_fasta_from_db(folder_location)
+    folder_location = create_folder(fasta_id,output_location)
+    fasta_location = derive_fasta_from_db(folder_location) 
     input_location = read_input(fasta_location)
     s4pred_location = run_s4pred(input_location)
     horiz_location = read_horiz(s4pred_location)
     hhsearch_location = run_hhsearch(horiz_location)
-    final_result = run_parser(hhsearch_location)
+    final_result = run_parser(hhsearch_location,output_location,fasta_id)
     return final_result
 
 def clear_folder_contents(folder_path):

@@ -12,7 +12,7 @@ a3m_file = "tmp.a3m"
 hhr_file = "tmp.hhr"
 
 @shared_task(bind=True,acks_late=True)
-def reduce_worker(self):
+def reduce_worker(self,msg,output_file):
     pass
 
 '''
@@ -69,5 +69,5 @@ def create_folder(self,location):
     pass
 '''
 @shared_task(bind=True,acks_late=True)
-def workflow(self,fasta_id):
+def workflow(self,fasta_id,output_location):
     pass

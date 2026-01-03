@@ -5,22 +5,15 @@ import sys
 import os
 from celery import chord
 # python3.12 ./apply.py /home/almalinux/course/course_work/test_id.txt hiii
-'''
-def apply(clean_line):
-    res = chain(
-        create_folder.s(clean_line).set(queue='tasks'),
-        derive_fasta_from_db.s().set(queue='tasks'),
-        read_input.s().set(queue='tasks'),
-        run_s4pred.s().set(queue='tasks'),
-        read_horiz.s().set(queue='tasks'),
-        run_hhsearch.s().set(queue='tasks'),
-        run_parser.s().set(queue='tasks')
-    ).apply_async(queue='tasks')
 
-    print("pipeline id:", res.id)
-'''
 #def apply(clean_line):
  #   workflow.apply_async(args=[clean_line], queue='tasks')
+
+'''
+1.创建前chain的第一个函数将nfs里面的储存文件夹创建好，
+2.每个worker运行pipeline并把{fastaid}.out写进nfs里面
+3.最后由一个worker计算出最终的output table返回给hosts
+'''
 
 if __name__ == "__main__":
     fasta_ids_location=sys.argv[1]
@@ -29,7 +22,7 @@ if __name__ == "__main__":
         print(f"File {fasta_ids_location} does not exist.")
         sys.exit(1)
     with open(fasta_ids_location, 'r', encoding='utf-8') as file:
-        res = [workflow.s(line.strip()).set(queue='tasks') for line in file if line.strip()]
-        reduce= reduce_worker.s().set(queue='map_broadcast')
+        res = [workflow.s(line.strip(),output_table).set(queue='tasks') for line in file if line.strip()]
+        reduce= reduce_worker.s(output_table).set(queue='map_broadcast')
         chord(res)(reduce) 
     print(f"output table name is {output_table}")
