@@ -8,14 +8,14 @@ approx 5min per analysis
 
 tmp_file = "tmp.fas"
 horiz_file = "tmp.horiz"
-a3m_file = "tmp.a3m"
-hhr_file = "tmp.hhr"
-
+a3m_file = "tmp.a3m"  
+hhr_file = "tmp.hhr" 
+   
 @shared_task(bind=True,acks_late=True)
 def reduce_worker(self,msg,output_file):
     pass
 
-@shared_task(bind=True)
+@shared_task(bind=True)  
 def clean_pipeline_output(self):
     pass
 
