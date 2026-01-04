@@ -17,21 +17,24 @@ def together(name):
     #ress=get_results.apply_async(args=[None,name], queue='map_broadcast')
     inspect = app.control.inspect()
     nodes = inspect.active_queues()
-    worker_names = list(nodes.keys())
-    
+    worker_names = sorted(list(set(nodes.keys())))
+    #worker_names = list(nodes.keys())
+    print(f"Detected workers: {worker_names}")
     # 关键：手动建立 Group，但通过 destination 锁定每台机器
     # 这样 worker-02 绝对抢不到发给 worker-05 的任务
     tasks = [
         get_results.apply_async(
             args=[None, name], 
             queue='tasks', 
-            options={'destination': [worker]} # 强制锁定
+            task_per_request_limit=1#,#the most important line, which makes sure no repeatition
+            #options={'destination': [worker]} # 强制锁定
         ) for worker in worker_names
     ]
     
     # 手动收集结果
     res_list = [t.get(timeout=30) for t in tasks]
-    print(res_list)
+    for re in res_list:
+        print(re)
     
     if not res_list:
         print("错误：未接收到数据")

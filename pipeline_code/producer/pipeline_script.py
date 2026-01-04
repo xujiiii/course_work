@@ -15,6 +15,10 @@ hhr_file = "tmp.hhr"
 def reduce_worker(self,msg,output_file):
     pass
 
+@shared_task(bind=True)
+def clean_pipeline_output(self):
+    pass
+
 '''
 @shared_task(bind=True)
 def run_parser(self,hhr_file):
