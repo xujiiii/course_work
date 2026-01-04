@@ -1,0 +1,21 @@
+- name: 创建目标文件夹
+  file:
+    path: "{{ prom_home }}"
+    state: directory
+    mode: '0755'
+
+- name: 下载并直接解压到目标目录
+  unarchive:
+    src: "https://github.com/prometheus/prometheus/releases/download/v{{ prom_version }}/prometheus-{{ prom_version }}.linux-amd64.tar.gz"
+    dest: "{{ prom_home }}"
+    remote_src: yes
+    # 核心：strip-components=1 会剥离压缩包里的顶层目录，直接解压内容
+    extra_opts: 
+      - "--strip-components=1"
+    creates: "{{ prom_home }}/prometheus"
+
+- name: 创建数据存储子目录 (推荐在同一目录下分离)
+  file:
+    path: "{{ prom_home }}/data"
+    state: directory
+    mode: '0755'
