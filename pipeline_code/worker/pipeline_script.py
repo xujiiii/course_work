@@ -294,8 +294,29 @@ def bootstrap_worker(sender, **kwargs):
     
     print(f"Worker {sender} is ready, work folder is clean")
 
+@shared_task(bind=True)
+def clean_pipeline_output(self):
+    """
+    清理 /tmp/pipeline_output/ 文件夹下的所有内容
+    """
+    folder_path="/tmp/pipeline_output"
+    if not os.path.exists(folder_path):
+        print(f"目录 {folder_path} 不存在，跳过清理。")
+        return
 
-@shared_task(bind=True,acks_late=True)
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)  # 删除文件或软链接
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # 删除子目录
+            print(f"已清理: {file_path}")
+        except Exception as e:
+            return f"清理 {file_path} 失败，原因: {e}"
+    return "finish cleaning"
+
+@shared_task(bind=True)#,acks_late=True)
 def get_results(self,msg,name):
     hostname = socket.gethostname()
     local_path = f"/tmp/pipeline_output/{name}"
@@ -348,12 +369,5 @@ def get_results(self,msg,name):
         }
     }
     
- 
-def together(self,name):
-    ress=get_results.apply_async(args=[None, name], queue='map_broadcast')
-    
-    res=ress.get()
-    
-    for re in res:
-        print(res)
+
   
