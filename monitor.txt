@@ -39,3 +39,12 @@ flower_task_prefetch_time_seconds
 
 8.总任务进度
 sum(flower_events_total{type="task-succeeded",task="pipeline_script.workflow"})
+
+9.存储空间的大小
+node_filesystem_avail_bytes{mountpoint="/"}
+
+10.每个worker正在处理的任务数量
+flower_worker_number_of_currently_executing_tasks
+
+11.hosts上，查看还有多少任务
+sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
