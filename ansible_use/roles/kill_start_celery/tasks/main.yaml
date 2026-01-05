@@ -1,5 +1,5 @@
 - name: kill celery by pkill
-  ansible.builtin.shell: "pkill -9 -f 'celery'"
+  ansible.builtin.shell: "pkill -9 'celery'"
   ignore_errors: yes
 
 - name: start celery with nohup
