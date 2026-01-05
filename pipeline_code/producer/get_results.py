@@ -25,9 +25,8 @@ def together(name):
     tasks = [
         get_results.apply_async(
             args=[None, name], 
-            queue='tasks', 
-            task_per_request_limit=1#,#the most important line, which makes sure no repeatition
-            #options={'destination': [worker]} # 强制锁定
+            queue='tasks',
+            options={'destination': [worker]} # 强制锁定到指定worker
         ) for worker in worker_names
     ]
     
@@ -48,8 +47,11 @@ def together(name):
     # 1. 遍历收集
     for re in res_list:
         # 合并详细记录
-        all_rows.extend(re['profile_output'])
-        
+        try:
+            all_rows.extend(re['profile_output'])
+        except:
+            print('None appears')
+            continue
         # 统计值加权计算
         stats = re['hits_output']
         c = stats['count']

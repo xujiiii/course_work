@@ -16,6 +16,8 @@ import os
 from celery.signals import worker_init
 import shutil
 from pathlib import Path
+import fcntl
+import time
 app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
 import pandas as pd
 import socket
@@ -242,19 +244,88 @@ def create_folder(fasta_id,output_location):
     return fasta_id
 
 
-@shared_task(bind=True,acks_late=True)
+@shared_task(bind=True, acks_late=True, autoretry_for=(Exception,), max_retries=3, default_retry_delay=60)
 def workflow(self,fasta_id,output_location):
     """
-    The complete pipeline workflow
+    The complete pipeline workflow with failure recovery
+    
+    失败时会自动重试，最多重试3次，每次重试间隔60秒
     """
-    folder_location = create_folder(fasta_id,output_location)
-    fasta_location = derive_fasta_from_db(folder_location) 
-    input_location = read_input(fasta_location)
-    s4pred_location = run_s4pred(input_location)
-    horiz_location = read_horiz(s4pred_location)
-    hhsearch_location = run_hhsearch(horiz_location)
-    final_result = run_parser(hhsearch_location,output_location,fasta_id)
-    return final_result
+    hostname = socket.gethostname()
+    lock_dir = f"/tmp/pipeline_output/{output_location}"
+    os.makedirs(lock_dir, exist_ok=True)
+    
+    # 每个fasta_id的处理锁
+    task_lock_file = os.path.join(lock_dir, f".{fasta_id}.lock")
+    task_output_file = os.path.join(lock_dir, f"{fasta_id}.out")  # 检查最终输出
+    
+    # 检查是否已处理完成（通过检查输出文件）
+    if os.path.exists(task_output_file):
+        logger.info(f"[{hostname}] FASTA ID {fasta_id} 的输出已存在，跳过")
+        return f"[{hostname}] FASTA ID {fasta_id} 已完成"
+    
+    # 尝试获取任务锁
+    lock_acquired = False
+    lock_fd = None
+    try:
+        lock_fd = os.open(task_lock_file, os.O_CREAT | os.O_WRONLY, 0o644)
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)  # 非阻塞独占锁
+        lock_acquired = True
+        logger.info(f"[{hostname}] 获得FASTA ID {fasta_id} 的处理锁")
+        
+        # 执行workflow
+        folder_location = create_folder(fasta_id,output_location)
+        fasta_location = derive_fasta_from_db(folder_location) 
+        input_location = read_input(fasta_location)
+        s4pred_location = run_s4pred(input_location)
+        horiz_location = read_horiz(s4pred_location)
+        hhsearch_location = run_hhsearch(horiz_location)
+        final_result = run_parser(hhsearch_location,output_location,fasta_id)
+        
+        logger.info(f"[{hostname}] FASTA ID {fasta_id} 处理完成，生成输出文件")
+        return f"[{hostname}] FASTA ID {fasta_id} 处理成功"
+        
+    except BlockingIOError:
+        # 获不到锁，说明其他worker在处理
+        logger.info(f"[{hostname}] 未获得FASTA ID {fasta_id} 的锁，其他worker在处理，等待输出...")
+        
+        # 轮询等待输出文件出现
+        max_wait = 1200  # 最多等待20分钟
+        check_interval = 5  # 每2秒检查一次
+        elapsed = 0
+        while not os.path.exists(task_output_file) and elapsed < max_wait:
+            time.sleep(check_interval)
+            elapsed += check_interval
+        
+        if os.path.exists(task_output_file):
+            logger.info(f"[{hostname}] FASTA ID {fasta_id} 已被其他worker完成")
+            return f"[{hostname}] FASTA ID {fasta_id} 已被其他worker完成"
+        else:
+            logger.error(f"[{hostname}] 等待FASTA ID {fasta_id} 处理超时，其他worker可能失败，尝试接手...")
+            # 超时后，尝试移除死锁的锁文件，允许重试
+            try:
+                if os.path.exists(task_lock_file):
+                    os.remove(task_lock_file)
+                    logger.info(f"[{hostname}] 移除超时的锁文件，允许重试")
+            except Exception as e:
+                logger.error(f"[{hostname}] 无法移除锁文件：{e}")
+            # 抛出异常，Celery会重试该任务
+            raise TimeoutError(f"FASTA ID {fasta_id} 处理超时，{other_worker}可能已崩溃")
+            
+    except Exception as e:
+        # 执行出错，记录错误但不创建done标记，允许其他worker重试
+        logger.error(f"[{hostname}] FASTA ID {fasta_id} 处理失败: {str(e)}")
+        raise  # 重新抛出异常，让Celery处理重试
+        
+    finally:
+        # 释放锁（无论成功还是失败）
+        if lock_fd is not None:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+                os.close(lock_fd)
+                logger.info(f"[{hostname}] 释放FASTA ID {fasta_id} 的处理锁")
+            except:
+                pass
 
 def clear_folder_contents(folder_path):
     """
@@ -323,42 +394,125 @@ def get_results(self,msg,name):
     output = f"{local_path}/output.csv"
     hits_output = f"{local_path}/hits_output.csv"
     profile_output = f"{local_path}/profile_output.csv"
+    lock_file = f"{local_path}/.compute.lock"  # 全局计算锁
+    done_file = f"{local_path}/.{hostname}_done"  # worker完成标记
 
-    # 1. 如果本地没有，则执行计算逻辑 (这里调用你之前的计算函数)
-    if not os.path.exists(output):
-        # run_actual_calc(table_name) 
+    # 检查此worker是否已执行过
+    if os.path.exists(done_file):
+        logger.info(f"[{hostname}] 已执行过，跳过重复执行")
+        # 确保输出文件存在再读取
+        while not os.path.exists(hits_output) or not os.path.exists(profile_output):
+            logger.info(f"[{hostname}] 等待输出文件就绪...")
+            time.sleep(0.5)
+        
+        df_p = pd.read_csv(profile_output)
+        df_b = pd.read_csv(hits_output)
+        return {
+            "worker": hostname,
+            "profile_output": df_b[['fasta_id', 'best_hit_id']].to_dict('records'),
+            "hits_output": {
+                "avg_std": float(df_p['avg_std'].iloc[0]),
+                "avg_gmean": float(df_p['avg_gmean'].iloc[0]),
+                "count": int(df_p['count'].iloc[0]) 
+            }
+        }
+
+    # 如果计算已完成，直接读取结果
+    if os.path.exists(output):
+        logger.info(f"[{hostname}] 输出文件已存在，直接读取")
+        df_p = pd.read_csv(profile_output)
+        df_b = pd.read_csv(hits_output)
+        # 创建此worker的完成标记
+        with open(done_file, 'w') as f:
+            f.write(hostname)
+        return {
+            "worker": hostname,
+            "profile_output": df_b[['fasta_id', 'best_hit_id']].to_dict('records'),
+            "hits_output": {
+                "avg_std": float(df_p['avg_std'].iloc[0]),
+                "avg_gmean": float(df_p['avg_gmean'].iloc[0]),
+                "count": int(df_p['count'].iloc[0]) 
+            }
+        }
+
+    # 使用文件锁确保只有一个任务执行计算
+    lock_acquired = False
+    try:
+        # 创建锁文件并尝试获得独占锁
+        lock_fd = os.open(lock_file, os.O_CREAT | os.O_WRONLY, 0o644)
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)  # 非阻塞独占锁
+        lock_acquired = True
+        logger.info(f"[{hostname}] 获得计算锁，开始计算")
+        
+        # 执行计算逻辑
         search_path = os.path.join(local_path, "*.out")
         all_files = glob.glob(search_path)
         if not all_files:
-            print("未找到任何 .out 文件")
+            logger.warning(f"[{hostname}] 未找到任何 .out 文件")
+            os.close(lock_fd)
             return
     
         # 2. 读取并合并
-        # 使用列表推导式一次性读取所有文件
         df_list = [pd.read_csv(f) for f in all_files]
         combined_df = pd.concat(df_list, ignore_index=True)
-        #calculate the hits results
-        hits_output=combined_df[['query_id','best_hit']].copy()
-        hits_output=hits_output.rename(columns={"query_id":'fasta_id','best_hit':'best_hit_id'})
-        #calculate avg_mean and avg_std 
+        
+        # calculate the hits results
+        hits_output_df = combined_df[['query_id','best_hit']].copy()
+        hits_output_df = hits_output_df.rename(columns={"query_id":'fasta_id','best_hit':'best_hit_id'})
+        
+        # calculate avg_mean and avg_std 
         ave_std = combined_df['score_std'].mean()
         ave_gmean = combined_df['score_gmean'].mean()
-        profile_output= pd.DataFrame({
+        profile_output_df = pd.DataFrame({
             'avg_std': [ave_std],
             'avg_gmean': [ave_gmean],
             'count': [len(combined_df)]
         })
         
         # 3. 结果汇总：保存总表
-        combined_df.to_csv(os.path.join(local_path,"output.csv"), index=False)
-        hits_output.to_csv(os.path.join(local_path,"hits_output.csv"), index=False)
-        profile_output.to_csv(os.path.join(local_path,"profile_output.csv"), index=False)
-  
-  
-    df_p = pd.read_csv(f"{local_path}/profile_output.csv")
-    df_b = pd.read_csv(f"{local_path}/hits_output.csv")
+        combined_df.to_csv(output, index=False)
+        hits_output_df.to_csv(hits_output, index=False)
+        profile_output_df.to_csv(profile_output, index=False)
+        
+        logger.info(f"[{hostname}] 计算完成，释放锁")
+        os.close(lock_fd)
+        
+    except BlockingIOError:
+        # 获不到锁，说明其他任务在计算，等待其完成
+        logger.info(f"[{hostname}] 未获得锁，其他任务在计算，等待...")
+        time.sleep(1)  # 等待1秒
+        
+        # 轮询等待输出文件出现
+        max_wait = 60  # 最多等待60秒
+        elapsed = 0
+        while not os.path.exists(output) and elapsed < max_wait:
+            time.sleep(1)
+            elapsed += 1
+        
+        if not os.path.exists(output):
+            logger.error(f"[{hostname}] 等待超时，输出文件未生成")
+            return
+    finally:
+        # 确保锁被释放
+        if lock_acquired:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+                os.close(lock_fd)
+            except:
+                pass
 
-    # 3. 返回内存对象（不占磁盘）
+    # 创建此worker的完成标记，防止后续重复执行
+    try:
+        with open(done_file, 'w') as f:
+            f.write(hostname)
+        logger.info(f"[{hostname}] 标记执行完成")
+    except Exception as e:
+        logger.error(f"[{hostname}] 无法创建完成标记：{e}")
+  
+    df_p = pd.read_csv(profile_output)
+    df_b = pd.read_csv(hits_output)
+
+    # 返回内存对象
     return {
         "worker": hostname,
         "profile_output": df_b[['fasta_id', 'best_hit_id']].to_dict('records'),
