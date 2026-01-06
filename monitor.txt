@@ -48,3 +48,6 @@ flower_worker_number_of_currently_executing_tasks
 
 11.hosts上，查看还有多少任务
 sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
+
+12.可以实现单点重启
+ansible-playbook -i ./inventory.yaml ./start_celery.yaml --limit worker2
