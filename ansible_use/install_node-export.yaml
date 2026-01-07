@@ -1,0 +1,4 @@
+---
+- hosts: workernode
+  roles:
+    - node-export   

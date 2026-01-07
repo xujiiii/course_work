@@ -4,6 +4,7 @@
       - numpy
       - celery
       - redis
+      - pandas
     executable: pip3.12
     state: present
   become: yes

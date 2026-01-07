@@ -1,0 +1,15 @@
+- name: kill celery by pkill
+  ansible.builtin.shell: "pkill -9 'celery'"
+  ignore_errors: yes
+
+- name: start celery with nohup
+  ansible.builtin.shell: 
+    cmd: "nohup {{ celery_cmd }} > celery_stdout.log 2>&1 &"
+    chdir: "{{ project_root }}"
+
+- name: 确认进程是否已启动
+  shell: "ps aux | grep 'celery'"
+  register: celery_status
+      
+- debug:
+    msg: "Celery 运行状态: {{ celery_status.stdout }}"

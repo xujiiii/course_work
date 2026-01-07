@@ -1,0 +1,98 @@
+celery -A pipeline_script inspect active
+用来检测worker在线数，当前运行的任务名称和参数
+
+celery -A pipeline_script inspect reserved
+每个在线worker的预取任务数
+
+celery -A pipeline_script inspect reserved
+很多统计量
+
+blue point:
+1.检测每个worker上celery的运行情况
+2.是否设置定期重启？
+3.检测处理的速度，可能可以用worker文件夹下增加文件数来得到.out，不对似乎celery自带的有
+4.worker的average load
+5.worker的memory情况
+
+monitor command:
+1.已经完成的任务
+flower_events_total{type="task-succeeded",task="pipeline_script.workflow"}
+
+2.失败的，非常重要
+flower_events_total{type="task-falied"}
+
+3.node_load1
+过去短时的负载
+
+4.预取任务
+flower_worker_prefetched_tasks{task="pipeline_script.workflow"}
+有时他们会不一样，这是因为每台机械过去的数据造成的影响，只要值不变即可
+大概是上个错误运行留下的错误数据导致的
+5.内存剩余
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100
+
+6.任务的等待时间
+flower_task_prefetch_time_seconds
+
+
+7.有时候数据库断了，也会出问题
+
+8.总任务进度
+sum(flower_events_total{type="task-succeeded",task="pipeline_script.workflow"})
+
+9.存储空间的大小
+node_filesystem_avail_bytes{mountpoint="/"}
+
+10.每个worker正在处理的任务数量
+flower_worker_number_of_currently_executing_tasks
+
+11.hosts上，查看还有多少任务
+sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
+
+12.可以实现单点重启
+ansible-playbook -i ./inventory.yaml ./start_celery.yaml --limit worker2
+
+13.celery log在home里
+
+14.有些任务运行超过30分钟，rabbitmq认为他掉线，就关闭了celery与他的连接
+重启试试,有些任务可能就是运行很久？？确定bug就是某个hhsearch运行时间过长
+解决，将rabbitmq允许的tasks时间增长到1h,有个运行快的worker在30分钟内成功运行
+完毕，bug好了...
+
+15.flower 没那么准，供参考，最好监控rabbitmq
+      3 sp|Q6PZE0|MUC19_MOUSE 时间长
+      3 sp|A2AAJ9|OBSCN_MOUSE 运行时间长
+      2 tr|A2CGC2|A2CGC2_MOUSE
+      2 sp|Q9D8U7|DTWD1_MOUSE
+      2 sp|Q91XT6|TAC2N_MOUSE
+      2 sp|Q8VIM9|IRGQ_MOUSE
+      2 sp|Q8C1A3|MTRR_MOUSE
+      2 sp|Q6GQV1|INY2B_MOUSE
+      2 sp|Q5IR70|CAGE1_MOUSE
+      2 sp|P61264|STX1B_MOUSE
+      falied sp|A2AGL3|RYR3_MOUSE hhsearch失败
+
+      miss:可能是每次重启丢失的目标，改进重启？
+      sp|A2AGL3|RYR3_MOUSE 
+      tr|A0A9L6KDQ4|A0A9L6KDQ4_MOUSE
+      sp|Q0VBL1|TIGD2_MOUSE
+      sp|P26369|U2AF2_MOUSE
+      tr|A0AAG1GJX7|A0AAG1GJX7_MOUSE
+      sp|Q8R0C3|S26A8_MOUSE
+
+16.rabbitmq-diagnostics status
+
+
+
+
+17.cut -d',' -f1 pipeline_code/producer/combined_test_tmux_exist_whole_data.csv | tail -n +2 | sort | uniq -c | sort -nr
+列重复值
+
+18.sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
+任务数量
+
+19.
+import pandas as pd
+hits=pd.read_csv("hits_output.csv")
+duplicate_rows = hits[hits.duplicated(subset=["fasta_id"],keep=False)]
+duplicate_rows

@@ -1,0 +1,27 @@
+[I 260105 01:00:54 command:168] Visit me at http://0.0.0.0:5555
+[I 260105 01:00:54 command:176] Broker: amqp://pipeline:**@10.134.12.57:5672//
+[I 260105 01:00:54 command:177] Registered tasks: 
+    ['celery.accumulate',
+     'celery.backend_cleanup',
+     'celery.chain',
+     'celery.chord',
+     'celery.chord_unlock',
+     'celery.chunks',
+     'celery.group',
+     'celery.map',
+     'celery.starmap',
+     'pipeline_script.clean_pipeline_output',
+     'pipeline_script.get_results',
+     'pipeline_script.reduce_worker',
+     'pipeline_script.workflow']
+[I 260105 01:00:54 mixins:228] Connected to amqp://pipeline:**@10.134.12.57:5672//
+[E 260105 04:18:26 broker:71] RabbitMQ management API call failed: [Errno 104] Connection reset by peer
+[E 260105 04:20:30 broker:71] RabbitMQ management API call failed: [Errno 104] Connection reset by peer
+[W 260105 04:47:49 inspector:44] Inspect method stats failed
+[W 260105 04:47:49 inspector:44] Inspect method active_queues failed
+[W 260105 04:47:49 inspector:44] Inspect method registered failed
+[W 260105 04:47:49 inspector:44] Inspect method scheduled failed
+[W 260105 04:47:49 inspector:44] Inspect method reserved failed
+[W 260105 04:47:49 inspector:44] Inspect method conf failed
+[W 260105 04:47:49 inspector:44] Inspect method revoked failed
+[W 260105 04:47:49 inspector:44] Inspect method active failed

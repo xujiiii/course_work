@@ -1,0 +1,57 @@
+- name: 创建 node_exporter 用户 (不允许登录，更安全)
+  user:
+    name: node_exporter
+    shell: /sbin/nologin
+    system: yes
+    state: present
+  become: yes
+- name: 下载 node_exporter 二进制包
+  get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp/node_exporter.tar.gz"
+  become: yes
+- name: 解压安装包
+  unarchive:
+    src: "/tmp/node_exporter.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+  become: yes
+- name: 拷贝二进制文件到系统路径
+  copy:
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+    dest: "/usr/local/bin/node_exporter"
+    mode: '0755'
+    remote_src: yes
+    owner: node_exporter
+    group: node_exporter
+  become: yes
+- name: 创建 Systemd 服务文件 (确保自动重启)
+  copy:
+    dest: /etc/systemd/system/node_exporter.service
+    content: |
+      [Unit]
+      Description=Node Exporter
+      After=network.target
+
+      [Service]
+      User=node_exporter
+      Group=node_exporter
+      Type=simple
+      ExecStart=/usr/bin/nice -n 10 /usr/local/bin/node_exporter
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+  become: yes
+- name: 重新加载 Systemd 并启动服务
+  systemd:
+    name: node_exporter
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  become: yes
+- name: 验证服务端口 (9100) 是否开启
+  wait_for:
+    port: 9100
+    timeout: 5
+  become: yes
