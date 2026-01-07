@@ -51,3 +51,48 @@ sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
 
 12.可以实现单点重启
 ansible-playbook -i ./inventory.yaml ./start_celery.yaml --limit worker2
+
+13.celery log在home里
+
+14.有些任务运行超过30分钟，rabbitmq认为他掉线，就关闭了celery与他的连接
+重启试试,有些任务可能就是运行很久？？确定bug就是某个hhsearch运行时间过长
+解决，将rabbitmq允许的tasks时间增长到1h,有个运行快的worker在30分钟内成功运行
+完毕，bug好了...
+
+15.flower 没那么准，供参考，最好监控rabbitmq
+      3 sp|Q6PZE0|MUC19_MOUSE 时间长
+      3 sp|A2AAJ9|OBSCN_MOUSE 运行时间长
+      2 tr|A2CGC2|A2CGC2_MOUSE
+      2 sp|Q9D8U7|DTWD1_MOUSE
+      2 sp|Q91XT6|TAC2N_MOUSE
+      2 sp|Q8VIM9|IRGQ_MOUSE
+      2 sp|Q8C1A3|MTRR_MOUSE
+      2 sp|Q6GQV1|INY2B_MOUSE
+      2 sp|Q5IR70|CAGE1_MOUSE
+      2 sp|P61264|STX1B_MOUSE
+      falied sp|A2AGL3|RYR3_MOUSE hhsearch失败
+
+      miss:可能是每次重启丢失的目标，改进重启？
+      sp|A2AGL3|RYR3_MOUSE 
+      tr|A0A9L6KDQ4|A0A9L6KDQ4_MOUSE
+      sp|Q0VBL1|TIGD2_MOUSE
+      sp|P26369|U2AF2_MOUSE
+      tr|A0AAG1GJX7|A0AAG1GJX7_MOUSE
+      sp|Q8R0C3|S26A8_MOUSE
+
+16.rabbitmq-diagnostics status
+
+
+
+
+17.cut -d',' -f1 pipeline_code/producer/combined_test_tmux_exist_whole_data.csv | tail -n +2 | sort | uniq -c | sort -nr
+列重复值
+
+18.sudo rabbitmqctl list_queues name messages_ready messages_unacknowledged
+任务数量
+
+19.
+import pandas as pd
+hits=pd.read_csv("hits_output.csv")
+duplicate_rows = hits[hits.duplicated(subset=["fasta_id"],keep=False)]
+duplicate_rows
