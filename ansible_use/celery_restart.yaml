@@ -1,0 +1,5 @@
+---
+- hosts: workernode
+  roles:
+    - celery_kill_cold
+    - celery_start

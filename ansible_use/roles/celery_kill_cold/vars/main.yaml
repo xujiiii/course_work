@@ -1,0 +1,3 @@
+---
+celery_cmd: celery -A pipeline_script worker  -Q tasks,map_broadcast  --loglevel=info   --concurrency=2   --prefetch-multiplier=1 -E
+project_root: /home/almalinux
