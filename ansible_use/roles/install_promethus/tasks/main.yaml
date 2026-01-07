@@ -19,3 +19,9 @@
     path: "{{ prom_home }}/data"
     state: directory
     mode: '0755'
+- name: copy configuration file to prometheus directory
+  ansible.builtin.copy: 
+    src: "./config_pro.yaml"
+    dest: "{{ prom_home }}/prometheus.yml"
+    mode: '0755'
+  

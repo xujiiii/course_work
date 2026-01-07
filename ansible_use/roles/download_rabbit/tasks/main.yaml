@@ -131,3 +131,7 @@
   ansible.builtin.command: 
     rabbitmqctl set_permissions -p / pipeline ".*" ".*" ".*"
   become: yes
+- name: enable rabbitmq_prometheus plugin
+  ansible.builtin.command: 
+    rabbitmq-plugins enable rabbitmq_prometheus
+  become: yes

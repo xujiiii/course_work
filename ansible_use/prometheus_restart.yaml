@@ -1,4 +1,4 @@
 ---
 - hosts: mgmntnode
   roles:
-    - restart-prometheus
+    - restart_prometheus

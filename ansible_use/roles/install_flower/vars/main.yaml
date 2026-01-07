@@ -1,3 +1,2 @@
 ---
-celery_cmd: "celery -A your_app worker --loglevel=info"
-project_path: "/home/almalinux/course/course_work/pipeline_code/producer"
+project_path: "../pipeline_code/producer"
