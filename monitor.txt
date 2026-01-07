@@ -96,3 +96,5 @@ import pandas as pd
 hits=pd.read_csv("hits_output.csv")
 duplicate_rows = hits[hits.duplicated(subset=["fasta_id"],keep=False)]
 duplicate_rows
+
+20. test connection
