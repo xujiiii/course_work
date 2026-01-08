@@ -1,4 +1,0 @@
----
-- hosts: workernode
-  roles:
-    - kill_start_celery
