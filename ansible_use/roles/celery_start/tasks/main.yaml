@@ -1,3 +1,6 @@
+- name: wait 5 seconds to ensure celery know the worker is killed
+  ansible.builtin.pause:
+    seconds: 5
 - name: start celery with nohup
   ansible.builtin.shell: 
     cmd: "nohup {{ celery_cmd }} > celery_stdout.log 2>&1 &"
