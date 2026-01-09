@@ -1,0 +1,3 @@
+---
+pipeline_script: ../pipeline_code/worker/pipeline_script.py
+results_parser: "../results_parser.py"
