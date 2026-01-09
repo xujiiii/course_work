@@ -62,24 +62,24 @@ ansible-playbook -i ./inventory.yaml ./start_celery.yaml --limit worker2
 15.flower 没那么准，供参考，最好监控rabbitmq
       3 sp|Q6PZE0|MUC19_MOUSE 时间长
       3 sp|A2AAJ9|OBSCN_MOUSE 运行时间长
-      2 tr|A2CGC2|A2CGC2_MOUSE
+      2 tr|A2CGC2|A2CGC2_MOUSE ok
       2 sp|Q9D8U7|DTWD1_MOUSE
       2 sp|Q91XT6|TAC2N_MOUSE
       2 sp|Q8VIM9|IRGQ_MOUSE
       2 sp|Q8C1A3|MTRR_MOUSE
       2 sp|Q6GQV1|INY2B_MOUSE
       2 sp|Q5IR70|CAGE1_MOUSE
-      2 sp|P61264|STX1B_MOUSE
+      2 sp|P61264|STX1B_MOUSE ok
       falied sp|A2AGL3|RYR3_MOUSE hhsearch失败
 
       miss:可能是每次重启丢失的目标，改进重启？
-      sp|A2AGL3|RYR3_MOUSE 
+      sp|A2AGL3|RYR3_MOUSE  ok
       tr|A0A9L6KDQ4|A0A9L6KDQ4_MOUSE
       sp|Q0VBL1|TIGD2_MOUSE
       sp|P26369|U2AF2_MOUSE
       tr|A0AAG1GJX7|A0AAG1GJX7_MOUSE
-      sp|Q8R0C3|S26A8_MOUSE
-
+      sp|Q8R0C3|S26A8_MOUSE ok
+ 
 16.rabbitmq-diagnostics status
 
 
@@ -98,3 +98,15 @@ duplicate_rows = hits[hits.duplicated(subset=["fasta_id"],keep=False)]
 duplicate_rows
 
 20. test connection
+
+21.flower和prometheus监控的worker online状态不同。。。。
+
+22. warn！！！，please dont use warm shut down seperately
+first kill warm to let celery to represent outline
+then use cold kill to force celery to close to prevent from repeating running
+finnallit use kill hhseerch to prevent hhsearch to run put of cpu
+
+'sp|P70206|PLXA1_MOUSE' kill by pkill hhsearch
+
+23.如果tasks失败了，会被重新发回queue，如果断线了，也会被重新发回queue
+
