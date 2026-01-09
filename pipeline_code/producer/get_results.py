@@ -27,8 +27,8 @@ def together(name):
     tasks = [
         get_results.apply_async(
             args=[None, name], 
-            queue='tasks',
-            options={'destination': [worker]} # 强制锁定到指定worker
+            queue=worker, # 强制锁定到指定worker
+            priority=9
         ) for worker in worker_names
     ]
     
@@ -46,6 +46,7 @@ def together(name):
 
     # 1. 遍历收集
     for re in res_list:
+        print(f'Received from worker: {re["worker"]}')
         try:
             output=re['output']
         except KeyError:
