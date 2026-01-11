@@ -1,10 +1,10 @@
-1.worker单独重启命令需要设置 ansible
+1.worker单独重启命令需要设置 ansible  ok --limit
 2.变量设置方法要中心化
-3.测试是否有重复结果出现，或是抢占同一id
-4.之前出现数据库连接失败，原因未知
-5.出现掉线 时，会导致整体的负载上升，可能原因是docker的问题
+3.测试是否有重复结果出现，或是抢占同一id  ok
+4.之前出现数据库连接失败，原因未知  
+5.出现掉线 时，会导致整体的负载上升，可能原因是docker的问题 ok
 6.完善celery自动重启
-6.1celerypkill时不存在会报错，fixing
+6.1celerypkill时不存在会报错，fixing  ok
 7.完善hosts的rabbit，redis，celery，prometheus，flower重启
 8.完善posgresql重启
 9.写个将authority-key加入全部机器的ansible
