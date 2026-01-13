@@ -1,0 +1,42 @@
+time=2026-01-13T10:02:09.344Z level=INFO source=main.go:1557 msg="updated GOGC" old=100 new=75
+time=2026-01-13T10:02:09.345Z level=INFO source=main.go:688 msg="Leaving GOMAXPROCS=4: CPU quota undefined" component=automaxprocs
+time=2026-01-13T10:02:09.345Z level=INFO source=memlimit.go:198 msg="GOMEMLIMIT is updated" component=automemlimit package=github.com/KimMachineGun/automemlimit/memlimit GOMEMLIMIT=7358684774 previous=9223372036854775807
+time=2026-01-13T10:02:09.345Z level=INFO source=main.go:730 msg="No time or size retention was set so using the default time retention" duration=15d
+time=2026-01-13T10:02:09.345Z level=INFO source=main.go:781 msg="Starting Prometheus Server" mode=server version="(version=3.8.1, branch=HEAD, revision=ed753444ffec98097399d0cfa9073c70a840b812)"
+time=2026-01-13T10:02:09.345Z level=INFO source=main.go:786 msg="operational information" build_context="(go=go1.25.5, platform=linux/amd64, user=root@fcf67c824170, date=20251216-08:46:44, tags=netgo,builtinassets)" host_details="(Linux 5.14.0-570.12.1.el9_6.x86_64 #1 SMP PREEMPT_DYNAMIC Tue May 13 06:11:55 EDT 2025 x86_64 ucapxuo-host-b2359cea1d (none))" fd_limits="(soft=524288, hard=524288)" vm_limits="(soft=unlimited, hard=unlimited)"
+time=2026-01-13T10:02:09.348Z level=INFO source=web.go:663 msg="Start listening for connections" component=web address=0.0.0.0:9090
+time=2026-01-13T10:02:09.348Z level=INFO source=main.go:1301 msg="Starting TSDB ..."
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1767809620700 maxt=1767873600000 ulid=01KEF8T42Y0WT77TSA024DK1KC
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1767873601064 maxt=1767938400000 ulid=01KEH6KNYXDB55HFJ3PJW9FVMC
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1767938401064 maxt=1768003200000 ulid=01KEK4D6ZS0VPAP31B438YC88C
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768003201064 maxt=1768068000000 ulid=01KEN26QZNEVQDHESR9MQPDCS9
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768068001064 maxt=1768132800000 ulid=01KEQ0090M1JK9FF4DHNS7NW41
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768132801064 maxt=1768197600000 ulid=01KERXSTFF68J29325GDCMH7W7
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768262401064 maxt=1768269600000 ulid=01KETMQKW86F1Q7DS8HQR2KKJ7
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768269601064 maxt=1768276800000 ulid=01KETVKB4AZ47NYYXRBC6E6HDQ
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768197601064 maxt=1768262400000 ulid=01KETVKBHE7R0A33YQM99YA1S0
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768276801064 maxt=1768284000000 ulid=01KEV2F2C92WVB1SA6JT9M15QP
+time=2026-01-13T10:02:09.349Z level=INFO source=repair.go:54 msg="Found healthy block" component=tsdb mint=1768284001064 maxt=1768291200000 ulid=01KEV9ASM9DH5MDRAM5AA7R4N2
+time=2026-01-13T10:02:09.349Z level=WARN source=dir_locker.go:76 msg="A lockfile from a previous execution already existed. It was replaced" component=tsdb file=/home/almalinux/course/course_work/prom/data/lock
+time=2026-01-13T10:02:09.351Z level=INFO source=tls_config.go:354 msg="Listening on" component=web address=[::]:9090
+time=2026-01-13T10:02:09.351Z level=INFO source=tls_config.go:357 msg="TLS is disabled." component=web http2=false address=[::]:9090
+time=2026-01-13T10:02:09.358Z level=INFO source=head.go:666 msg="Replaying on-disk memory mappable chunks if any" component=tsdb
+time=2026-01-13T10:02:09.362Z level=INFO source=head.go:752 msg="On-disk memory mappable chunks replay completed" component=tsdb duration=3.503923ms
+time=2026-01-13T10:02:09.362Z level=INFO source=head.go:760 msg="Replaying WAL, this may take a while" component=tsdb
+time=2026-01-13T10:02:09.375Z level=INFO source=head.go:797 msg="WAL checkpoint loaded" component=tsdb
+time=2026-01-13T10:02:09.463Z level=INFO source=head.go:833 msg="WAL segment loaded" component=tsdb segment=66 maxSegment=70 duration=87.532825ms
+time=2026-01-13T10:02:09.550Z level=INFO source=head.go:833 msg="WAL segment loaded" component=tsdb segment=67 maxSegment=70 duration=86.953937ms
+time=2026-01-13T10:02:09.681Z level=INFO source=head.go:833 msg="WAL segment loaded" component=tsdb segment=68 maxSegment=70 duration=130.75891ms
+time=2026-01-13T10:02:09.764Z level=INFO source=head.go:833 msg="WAL segment loaded" component=tsdb segment=69 maxSegment=70 duration=83.039197ms
+time=2026-01-13T10:02:09.764Z level=INFO source=head.go:833 msg="WAL segment loaded" component=tsdb segment=70 maxSegment=70 duration=276.037µs
+time=2026-01-13T10:02:09.765Z level=INFO source=head.go:870 msg="WAL replay completed" component=tsdb checkpoint_replay_duration=13.599059ms wal_replay_duration=389.042581ms wbl_replay_duration=160ns chunk_snapshot_load_duration=0s mmap_chunk_replay_duration=3.503923ms total_replay_duration=406.199826ms
+time=2026-01-13T10:02:09.768Z level=INFO source=main.go:1322 msg="filesystem information" fs_type=XFS_SUPER_MAGIC
+time=2026-01-13T10:02:09.768Z level=INFO source=main.go:1325 msg="TSDB started"
+time=2026-01-13T10:02:09.768Z level=INFO source=main.go:1510 msg="Loading configuration file" filename=prometheus.yml
+time=2026-01-13T10:02:09.768Z level=INFO source=watcher.go:240 msg="Starting WAL watcher" component=remote remote_name=f6e893 url=https://prometheus-prod-55-prod-gb-south-1.grafana.net/api/prom/push queue=f6e893
+time=2026-01-13T10:02:09.768Z level=INFO source=metadata_watcher.go:90 msg="Starting scraped metadata watcher" component=remote remote_name=f6e893 url=https://prometheus-prod-55-prod-gb-south-1.grafana.net/api/prom/push
+time=2026-01-13T10:02:09.769Z level=INFO source=watcher.go:292 msg="Replaying WAL" component=remote remote_name=f6e893 url=https://prometheus-prod-55-prod-gb-south-1.grafana.net/api/prom/push queue=f6e893
+time=2026-01-13T10:02:09.775Z level=INFO source=main.go:1550 msg="Completed loading of configuration file" db_storage=1.37µs remote_storage=488.262µs web_handler=543ns query_engine=609ns scrape=5.632501ms scrape_sd=140.509µs notify=158.975µs notify_sd=29.341µs rules=3.042µs tracing=8.488µs filename=prometheus.yml totalDuration=6.874724ms
+time=2026-01-13T10:02:09.775Z level=INFO source=main.go:1286 msg="Server is ready to receive web requests."
+time=2026-01-13T10:02:09.775Z level=INFO source=manager.go:190 msg="Starting rule manager..." component="rule manager"
+time=2026-01-13T10:02:16.106Z level=INFO source=watcher.go:538 msg="Done replaying WAL" component=remote remote_name=f6e893 url=https://prometheus-prod-55-prod-gb-south-1.grafana.net/api/prom/push duration=6.337731777s

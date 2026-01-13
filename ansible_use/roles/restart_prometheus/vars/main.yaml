@@ -1,2 +1,3 @@
 ---
 prom_location: ../prom
+prom_logs: ../logs/prometheus/prometheus.log
