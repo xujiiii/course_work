@@ -1,0 +1,18 @@
+You have incorrectly specified the following celery arguments after flower command: ['--broker']. Please specify them after celery command instead following this template: celery [celery args] flower [flower args].
+[I 260113 09:39:39 command:168] Visit me at http://0.0.0.0:5555
+[I 260113 09:39:39 command:176] Broker: amqp://pipeline:**@10.134.12.57:5672//
+[I 260113 09:39:39 command:177] Registered tasks: 
+    ['celery.accumulate',
+     'celery.backend_cleanup',
+     'celery.chain',
+     'celery.chord',
+     'celery.chord_unlock',
+     'celery.chunks',
+     'celery.group',
+     'celery.map',
+     'celery.starmap',
+     'pipeline_script.clean_pipeline_output',
+     'pipeline_script.get_results',
+     'pipeline_script.reduce_worker',
+     'pipeline_script.workflow']
+[I 260113 09:39:39 mixins:228] Connected to amqp://pipeline:**@10.134.12.57:5672//
