@@ -63,8 +63,8 @@ def together(name):
     avg_gmean=df['score_gmean'].mean()
     avg_std=df['score_std'].mean()
     df_means = pd.DataFrame([{
-    'avg': avg_gmean,
-    'std': avg_std
+    'avg_gmean': avg_gmean,
+    'avg_std': avg_std
     }])
     df_means.to_csv(f"{name}_summary.csv",index=False)
 

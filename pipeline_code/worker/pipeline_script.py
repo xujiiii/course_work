@@ -56,6 +56,7 @@ def reduce_worker(self,msg,output_file):
     # 使用列表推导式一次性读取所有文件
     df_list = [pd.read_csv(f) for f in all_files]
     combined_df = pd.concat(df_list, ignore_index=True)
+    
     #calculate the hits results
     hits_output=combined_df[['query_id','best_hit']].copy()
     hits_output=hits_output.rename(columns={"query_id":'fasta_id','best_hit':'best_hit_id'})
@@ -341,17 +342,24 @@ def clean_pipeline_output(self):
             return f"清理 {file_path} 失败，原因: {e}"
     return "finish cleaning"
 
-@shared_task(bind=True)#,acks_late=True)
+@shared_task(bind=True)
 def get_results(self,msg,name):
     hostname = socket.gethostname()
     local_path = f"/tmp/pipeline_output/{name}"
+    search_path = os.path.join(local_path, "*.out")
+    all_files = glob.glob(search_path)
+    if not all_files:
+        print("未找到任何 .out 文件")
+        return
+
+    # 2. 读取并合并
+    # 使用列表推导式一次性读取所有文件
+    df_list = [pd.read_csv(f) for f in all_files]
+    combined_df = pd.concat(df_list, ignore_index=True)
+
+    combined_df.to_csv(os.path.join(local_path, "output.csv"), index=False)
+
     output = f"{local_path}/output.csv"
-    hits_output = f"{local_path}/hits_output.csv"
-    profile_output = f"{local_path}/profile_output.csv"
-    lock_file = f"{local_path}/.compute.lock"  # 全局计算锁
-    done_file = f"{local_path}/.{hostname}_done"  # worker完成标记
-    df_p = pd.read_csv(profile_output)
-    df_b = pd.read_csv(hits_output)
     df_out = pd.read_csv(output)
 
     # 返回内存对象
