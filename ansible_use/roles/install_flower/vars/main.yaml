@@ -1,2 +1,3 @@
 ---
 project_path: "../pipeline_code/producer"
+flower_log: "../../logs/flower/flower_startup.log"

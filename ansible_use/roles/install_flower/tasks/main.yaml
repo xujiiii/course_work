@@ -17,7 +17,7 @@
     nohup celery -A pipeline_script flower \
       --broker=amqp://pipeline:pipeline123@localhost:5672// \
       --address=0.0.0.0 \
-      --port=5555 > flower_startup.log 2>&1 &
+      --port=5555 > {{ flower_log }} 2>&1 &
   args:
     chdir: "{{ project_path }}"
   async: 15
