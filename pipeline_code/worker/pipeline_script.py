@@ -342,6 +342,8 @@ def clean_pipeline_output(self):
             return f"清理 {file_path} 失败，原因: {e}"
     return "finish cleaning"
 
+
+
 @shared_task(bind=True)
 def get_results(self,msg,name):
     hostname = socket.gethostname()
