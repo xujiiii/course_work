@@ -1,6 +1,3 @@
 ---
 prom_version: "3.8.1"
 prom_home: "../prom"  # 安装目录
-bin_dir: "../prom/bin"      # 程序文件路径
-conf_dir: "../prom/conf"    # 配置文件路径
-data_dir: "../prom/data"    # 监控数据路径

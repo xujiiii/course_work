@@ -1,6 +1,6 @@
 - name: kill celery by pkill
   ansible.builtin.shell: "pkill -o -f -9 'celery'"
-  failed_when: false #忽略错误，即使没有找到进程也不会报错
+  failed_when: false #忽略错误，即使没有找到进程也不会报错,原来没有找到进程就会返回1
 
 - name: kill HHsearch to prevent from cpu overload，since HHsearch may continue
   ansible.builtin.shell: "pkill -f -9 'hhsearch'"

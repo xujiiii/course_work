@@ -1,27 +1,33 @@
+- name: Make sure project root exists
+  ansible.builtin.file:
+    state: directory
+    path: "{{ project_root }}"
+    mode: '0777'
+    recurse: true
 - name: Check pdb70 is present
-  stat: path={{ install_pdb_folder }}
+  stat: path="{{ project_root }}/Data/pdb70"
   register: pdb70_exist
 - name: Create folder to install pdb
   when: pdb70_exist.stat.exists == False
   ansible.builtin.file:
-    path: "{{ install_pdb_folder }}"
+    path: "{{ project_root }}/Data/pdb70"
     state: directory # 确保它是目录
 - name: Download the gz file
   when: pdb70_exist.stat.exists == False
   ansible.builtin.get_url:
     url: "{{ pdb_url }}"
-    dest: "{{ install_pdb_folder }}/{{ archive_filename }}"
+    dest: "{{ project_root }}/Data/pdb70/{{ archive_filename }}"
     force: yes
   register: download_result # 注册变量，用于检查下载是否成功或文件是否被替换
 - name: decode gz file
   # 只有当文件被下载或替换时，才执行解压（优化）
   when: download_result.changed or download_result.dest is defined
   ansible.builtin.command:
-    cmd: "tar -xzvf {{ install_pdb_folder }}/{{ archive_filename }}" # 这里的 archive_filename 是 test.gz
+    cmd: "tar -xzvf {{ project_root }}/Data/pdb70/{{ archive_filename }}" # 这里的 archive_filename 是 test.gz
   args:
-    chdir: "{{ install_pdb_folder }}" # 确保在目标目录下执行命令
+    chdir: "{{ project_root }}/Data/pdb70" # 确保在目标目录下执行命令
 - name: delete the gz file
   when: pdb70_exist.stat.exists == False
   ansible.builtin.file:
-    path: "{{ install_pdb_folder }}/{{ archive_filename }}"
+    path: "{{ project_root }}/Data/pdb70/{{ archive_filename }}"
     state: absent # 设置状态为 absent 即表示删除

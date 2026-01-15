@@ -1,5 +1,3 @@
 ---
 pdb_url: https://wwwuser.gwdguser.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/pdb70_from_mmcif_latest.tar.gz
-#pdb_url: https://wwwuser.gwdguser.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/dbCAN-fam-V8.tar.gz
-install_pdb_folder : /home/almalinux/Data/pdb70
 archive_filename: pdb70.tar.gz
