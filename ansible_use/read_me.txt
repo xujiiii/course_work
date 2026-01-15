@@ -11,9 +11,10 @@ hiiiiiii
 some nan includ in the results, dont know if it is bug or normal
 
 1. pip install ansible
-2. go to ansible_use/inventory.yaml to write your worker address
+2. go to ansible_use/inventory.yaml to write your worker address and ssh key location
 3. go to ansible_use/roles/istall_prometheus/tasks/config_pro.yaml
    add your grafana user name password url and set your worker node address
+
 
 4. run ansible-playbook -i inventory.yaml full.yaml
 
