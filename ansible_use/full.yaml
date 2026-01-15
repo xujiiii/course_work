@@ -1,0 +1,40 @@
+---
+- hosts: mymachines
+  roles:
+    - common
+    - openmpi
+    - py312
+
+- hosts: workernode
+  roles:
+    - reboot
+
+- hosts: mgmntnode
+  roles:
+    - py_mgmtnode
+    - install_redis
+    - download_rabbit
+    - install_promethus
+    - restart_prometheus
+    - install_flower
+
+- hosts: workernode
+  roles:
+    - py_workernode
+    - install_posgresql
+    - create_fasta_db
+    - install_s4pred
+    - download_pdb70
+    - docker_download
+    - node-export  
+    - assign_pipeline_code
+    - celery_kill_warm
+    - celery_kill_cold
+    - celery_start
+
+
+  
+
+
+
+
