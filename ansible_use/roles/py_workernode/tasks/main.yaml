@@ -9,6 +9,7 @@
       - docker
       - redis
       - pandas
+      - psycopg2
     executable: pip3.12
     state: present
   become: yes
