@@ -110,3 +110,39 @@ finnallit use kill hhseerch to prevent hhsearch to run put of cpu
 
 23.如果tasks失败了，会被重新发回queue，如果断线了，也会被重新发回queue
 
+
+
+变量：nc : not change   okk: use group_vars
+pipeline_script: pipeline_script在hosts上的位置，用于复制  nc
+result_parser: result_parser在worker上的位置  nc
+celery_cmd:启动的celery命令  okkk
+project_root:worker上pipeline_script所在的文件夹 
+db_name: "pipeline" posgresql中储存全部fasta的数据库名字 okkk
+remote_data_dir: "/tmp/fasta_import" 临时文件 okkk
+local_fasta_path: "../UP000000589_10090.fasta" hosts上的总fasta文件位置  okk
+ansible_python_interpreter: /usr/bin/python3.12 
+pdb_url: https://wwwuser.gwdguser.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/pdb70_from_mmcif_latest.tar.gz
+下载pdb的网址
+install_pdb_folder : /home/almalinux/Data/pdb70
+pdb的9个文件存放的位置 
+archive_filename: pdb70.tar.gz okkk
+下载的tar.gz文件的名字，之后会ansible删除
+
+flower
+project_path: "../pipeline_code/producer" 本地hosts的producer所在文件夹  okkk
+flower_log: "../../logs/flower/flower_startup.log"本地储存flower的log文件的文件名字 okkk
+
+db_pass: pipeline123  posgresql的登录密码  okkk
+pg_hba_path: /var/lib/pgsql/data/pg_hba.conf posgresql的配置文件地址  okkk
+
+prom_version: "3.8.1" prometheus的安装版本   
+prom_home: "../prom"  # 安装目录  hosts上的prometheus安装目录
+
+app_location: /home/almalinux/s4pred/Applications 安装s4pred文件夹
+
+node_exporter_version: "1.7.0"安装node-export的版本
+
+prom_location: ../prom  prometheus的安装文件夹 
+prom_logs: ../logs/prometheus/prometheus.log host上prometheus的log文件目录 okkk
+
+改prohome和pro root
