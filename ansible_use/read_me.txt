@@ -10,7 +10,7 @@ hiiiiiii
 
 some nan includ in the results, dont know if it is bug or normal
 
-1. pip install ansible
+1. sudo dnf install ansible
 1.1 sudo dnf install git
 2. go to ansible_use/inventory.yaml to write your worker address and ssh key location
 3. go to ansible_use/roles/istall_prometheus/tasks/config_pro.yaml
