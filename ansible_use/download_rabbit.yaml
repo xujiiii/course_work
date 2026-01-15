@@ -1,4 +1,0 @@
----
-- hosts: mgmntnode
-  roles:
-    - download_rabbit
