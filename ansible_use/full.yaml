@@ -17,11 +17,12 @@
     - install_promethus
     - restart_prometheus
     - install_flower
+    - install_grafana
 
 - hosts: workernode
   roles:
-    - py_workernode
     - install_posgresql
+    - py_workernode
     - create_fasta_db
     - install_s4pred
     - download_pdb70
