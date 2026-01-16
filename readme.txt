@@ -25,6 +25,8 @@ chmod 400 comp
 2. sudo dnf install git
 3. go to ansible_use/inventory.yaml to write your worker address and ssh key location
 
+3.1 go to ansible_use/roles/install_prometheus/tasks/config  to add the ip of your workers
+
 4.got to /pipeline_code/producer got to /pipeline_code/worker change the hosts broker to your ip
 
 5. run ansible-playbook -i inventory.yaml full.yaml

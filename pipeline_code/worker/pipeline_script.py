@@ -18,9 +18,9 @@ import shutil
 from pathlib import Path
 import fcntl
 import time
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.89:5672//', backend='redis://10.134.12.89:6379/0')
 import pandas as pd
 import socket
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.219:5672//', backend='redis://10.134.12.219:6379/0')
 app.conf.task_queues = (
     Broadcast('map_broadcast'), # 定义广播队列
 )

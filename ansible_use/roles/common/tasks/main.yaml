@@ -1,10 +1,3 @@
-- name: Make sure project root exists
-  ansible.builtin.file:
-    state: directory
-    path: "{{ project_root }}"
-    mode: '0777'
-    recurse: true
-  become: yes
 - name: 清理 DNF 缓存
   command: dnf clean all
   become: yes
