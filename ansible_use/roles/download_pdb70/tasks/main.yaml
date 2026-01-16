@@ -4,6 +4,7 @@
     path: "{{ project_root }}"
     mode: '0777'
     recurse: true
+  become: yes
 - name: Check pdb70 is present
   stat: path="{{ project_root }}/Data/pdb70"
   register: pdb70_exist
