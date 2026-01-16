@@ -4,7 +4,7 @@
     path: "{{ project_root }}"
     mode: '0777'
     recurse: true
-
+  become: yes
 - name: copy pipeline code to workers
   ansible.builtin.copy:
     src: "{{ pipeline_script }}"

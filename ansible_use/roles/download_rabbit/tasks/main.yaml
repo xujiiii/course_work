@@ -95,6 +95,12 @@
       type=rpm-md
   become: yes
 # 2. 对应 dnf install -y logrotate
+- name: copy configuration file to rabbitmq.conf
+  ansible.builtin.copy: 
+    src: "./rabbit.conf"
+    dest: "/etc/rabbitmq/rabbitmq.conf"
+    mode: '0755'
+  become: yes
 - name: 安装 logrotate 依赖
   ansible.builtin.dnf:
       name: logrotate
@@ -134,4 +140,10 @@
 - name: enable rabbitmq_prometheus plugin
   ansible.builtin.command: 
     rabbitmq-plugins enable rabbitmq_prometheus
+  become: yes
+
+- name: start rabbitmq-server
+  ansible.builtin.service:
+    name: rabbitmq-server
+    state: restarted
   become: yes

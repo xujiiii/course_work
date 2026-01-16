@@ -33,28 +33,22 @@ scrape_configs:
 
   - job_name: 'rabbit_mq monitor'
     static_configs:
-      - targets: ['<RABBITMQ_IP>:15692']
+      - targets: ['localhost:15692']
     
     scrape_interval: 15s
 
   - job_name: 'celery_workers'
     static_configs:
       - targets:
-        - '10.134.12.58:9100' # fill by your ip and port like 'ip:port' of node-export
-        -   
-        -  
-        - 
-        - 
+        - '10.134.12.202:9100' # fill by your ip and port like 'ip:port' of node-export
 
   - job_name: flower to monitor celery sitautionSSS
     static_configs:
       - targets: ['localhost:5555']
 
 remote_write:
-- url: #fill by yourself
+- url: <>
   basic_auth:
-    username: #fill by yourself
-    password: #fill by yourself
-
-
+    username: <>
+    password: <>
     

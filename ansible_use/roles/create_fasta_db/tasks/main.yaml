@@ -4,6 +4,7 @@
     path: "{{ project_root }}"
     mode: '0777'
     recurse: true
+  become: yes
 - name: Ensure pip packages are installed for Python 3.12
   ansible.builtin.pip:
     name:
