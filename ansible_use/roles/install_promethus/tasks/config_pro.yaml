@@ -46,9 +46,4 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:5555']
 
-remote_write:
-- url: <>
-  basic_auth:
-    username: <>
-    password: <>
     
