@@ -111,9 +111,22 @@
     name: erlang
     state: present
   become: yes
+- name: 清理 DNF 缓存
+  command: dnf clean all
+  become: yes
+- name: 删除 DNF 缓存目录
+  file:
+    path: /var/cache/dnf
+    state: absent
+  become: yes
+
+- name: 重新建立元数据缓存
+  command: dnf makecache -y
+  become: yes
 - name: 清理 DNF 缓存数据
   ansible.builtin.dnf:
     update_cache: yes
+  become: yes
 - name: 安装 rabbitmq-server
   ansible.builtin.dnf:
     name: rabbitmq-server

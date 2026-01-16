@@ -41,7 +41,9 @@ scrape_configs:
     static_configs:
       - targets:
         - '10.134.12.202:9100' # fill by your ip and port like 'ip:port' of node-export
-
+        - '10.134.12.126:9100'
+        - '10.134.12.90:9100'
+        - '10.134.12.201:9100'
   - job_name: flower to monitor celery sitautionSSS
     static_configs:
       - targets: ['localhost:5555']
