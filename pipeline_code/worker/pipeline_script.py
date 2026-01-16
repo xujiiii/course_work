@@ -18,7 +18,7 @@ import shutil
 from pathlib import Path
 import fcntl
 import time
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.89:5672//', backend='redis://10.134.12.89:6379/0')
 import pandas as pd
 import socket
 app.conf.task_queues = (
@@ -84,7 +84,9 @@ def run_parser(location,output_location,fasta_id):
     Run the results_parser.py over the hhr file to produce the output summary
     """
     #hhr=os.path.join(location,hhr_file)
-    fuc_location='/home/almalinux/results_parser.py'
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    fuc_location=os.path.join(base_dir,'results_parser.py')
+
     cmd = ['python3.12', fuc_location, hhr_file]
     logger.info(f'STEP 6: RUNNING PARSER: {" ".join(cmd)}')
     p = Popen(cmd, stdin=PIPE,stdout=PIPE, stderr=PIPE,cwd=location)
@@ -104,10 +106,10 @@ def run_hhsearch(location):
     """
     #hhsearch_location='/data/student/miniforge3/envs/test_xu/bin/hhsearch'
     global a3m_file
-    #a3m=os.path.join(location,a3m_file)
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     search_data='Data/pdb70/pdb70'
     cmd= ["sudo","docker","run","--rm",
-          "-v","/home/almalinux:/app",
+          "-v",f"{base_dir}:/app",
           "-v", f"{location}:/output", 
           "-w", "/app",
           "soedinglab/hh-suite:latest",
@@ -157,7 +159,8 @@ def run_s4pred(location):
     Runs the s4pred secondary structure predictor to produce the horiz file
     """
     workername = socket.gethostname()
-    model_location='/home/almalinux/s4pred/Applications/s4pred/run_model.py'
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_location = os.path.join(base_dir,'s4pred/Applications/s4pred/run_model.py')
     if os.path.exists(model_location):
         logger.info(f'location for s4pred exists')
     else: 

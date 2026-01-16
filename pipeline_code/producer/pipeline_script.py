@@ -1,5 +1,5 @@
 from celery import Celery, shared_task
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://localhost:6379/0')
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.89:5672//', backend='redis://localhost:6379/0')
 
 """
 usage: python pipeline_script.py INPUT.fasta  
