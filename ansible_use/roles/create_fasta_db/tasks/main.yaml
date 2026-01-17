@@ -13,36 +13,33 @@
     executable: pip3.12
     state: present
   become: yes
-- name: 在 PostgreSQL 中创建数据库
+- name: Create database in PostgreSQL
   become_user: postgres
   postgresql_db:
     name: "{{ db_name }}"
     state: present
   become: yes
-- name: 创建远程临时目录
+- name: Create temporary directory on Worker
   file:
     path: "{{ remote_data_dir }}"
     state: directory
     mode: '0755'
-- name: 分发 FASTA 文件和解析脚本到 Worker
+- name: copy FASTA file and python file to workers
   copy:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
   loop:
     - { src: "{{ local_fasta_path }}", dest: "{{ remote_data_dir }}/data.fasta" }
     - { src: "./import_fasta.py", dest: "{{ remote_data_dir }}/import_fasta.py" }
-
-- name: 执行导入脚本
+- name: Run the import_fasta.py script on Worker
   become_user: postgres
   command: "python3.12 {{ remote_data_dir }}/import_fasta.py {{ db_name }} {{ remote_data_dir }}/data.fasta"
   register: import_result
   become: yes
-
-- name: 显示导入结果
+- name: Show the results of import_fasta.py
   debug:
-    msg: "导入任务已完成！"
-
-- name: 清理远程大型 FASTA 文件 (可选)
+    msg: "Successfully import fasta file to database in PostgreSQL"
+- name: Remove the temporary FASTA file from Worker
   file:
     path: "{{ remote_data_dir }}/data.fasta"
     state: absent

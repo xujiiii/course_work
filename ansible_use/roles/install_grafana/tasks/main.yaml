@@ -1,10 +1,10 @@
 ---
-- name: 导入 Grafana GPG 密钥
+- name: import Grafana GPG key
   rpm_key:
     state: present
     key: https://rpm.grafana.com/gpg.key
   become: yes
-- name: 配置 Grafana Yum 仓库
+- name: Set Grafana Yum repository
   yum_repository:
     name: grafana
     description: Grafana Repository
@@ -17,23 +17,23 @@
     sslcacert: /etc/pki/tls/certs/ca-bundle.crt
     state: present
   become: yes
-- name: 安装 Grafana
+- name: install Grafana
   dnf:
     name: grafana
-    state: present  # 确保安装，如果已安装则跳过
+    state: present  
   become: yes
-- name: 启动并启用 Grafana 服务
+- name: start Grafana and enable it
   systemd:
     name: grafana-server
     state: started
     enabled: yes
   become: yes
-- name: 等待 Grafana 启动 API 响应
+- name: wait for Grafana to start
   wait_for:
     port: 3000
     delay: 2
   
-- name: 自动连接本地 Prometheus 数据源 (幂等处理)
+- name: connect to Prometheus
   uri:
     url: "http://localhost:3000/api/datasources"
     method: POST
@@ -47,6 +47,6 @@
       url: "http://localhost:9090"
       access: "proxy"
       isDefault: true
-    # 200 表示创建成功，409 表示数据源已存在（即幂等性体现）
+    # 200 表示创建成功，409 表示数据源已存在（幂等性）
     status_code: [200, 409]
   become: yes

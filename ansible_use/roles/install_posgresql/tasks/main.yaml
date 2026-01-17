@@ -39,20 +39,20 @@
     executable: pip3.12
     state: present
   become: yes
-- name: 给 postgres 用户设置密码
+- name: Set password to postgres user 
   community.general.postgresql_user:
     name: postgres
     password: "{{ db_pass }}"
   become: yes
   become_user: postgres
-- name: 1. 将 IPv4 本地连接的 ident 修改为 md5
+- name: Set ident to md5 in IPv4 setting
   ansible.builtin.lineinfile:
     path: "{{ pg_hba_path }}"
     regexp: '^host\s+all\s+all\s+127\.0\.0\.1/32\s+ident'
     line: "host    all             all             127.0.0.1/32            md5"
     backrefs: yes
   become: yes
-- name: 2. 将 IPv6 本地连接的 ident 修改为 md5
+- name: Set ident to md5 in IPv6 setting
   ansible.builtin.lineinfile:
     path: "{{ pg_hba_path }}"
     regexp: '^host\s+all\s+all\s+::1/128\s+ident'

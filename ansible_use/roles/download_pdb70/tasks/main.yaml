@@ -12,23 +12,22 @@
   when: pdb70_exist.stat.exists == False
   ansible.builtin.file:
     path: "{{ project_root }}/Data/pdb70"
-    state: directory # 确保它是目录
+    state: directory 
 - name: Download the gz file
   when: pdb70_exist.stat.exists == False
   ansible.builtin.get_url:
     url: "{{ pdb_url }}"
     dest: "{{ project_root }}/Data/pdb70/{{ archive_filename }}"
     force: yes
-  register: download_result # 注册变量，用于检查下载是否成功或文件是否被替换
+  register: download_result 
 - name: decode gz file
-  # 只有当文件被下载或替换时，才执行解压（优化）
   when: download_result.changed or download_result.dest is defined
   ansible.builtin.command:
-    cmd: "tar -xzvf {{ project_root }}/Data/pdb70/{{ archive_filename }}" # 这里的 archive_filename 是 test.gz
+    cmd: "tar -xzvf {{ project_root }}/Data/pdb70/{{ archive_filename }}" 
   args:
-    chdir: "{{ project_root }}/Data/pdb70" # 确保在目标目录下执行命令
+    chdir: "{{ project_root }}/Data/pdb70" 
 - name: delete the gz file
   when: pdb70_exist.stat.exists == False
   ansible.builtin.file:
     path: "{{ project_root }}/Data/pdb70/{{ archive_filename }}"
-    state: absent # 设置状态为 absent 即表示删除
+    state: absent 
