@@ -20,18 +20,20 @@ sudo dnf install python3-pip
 python3 -m pip install --user ansible
 
 copy your ssh key to hosts
-chmod 400 comp
+chmod 600 comp
 
 2. sudo dnf install git
-3. go to ansible_use/inventory.yaml to write your worker address and ssh key location
 
-3.1 go to ansible_use/roles/install_prometheus/tasks/config  to add the ip of your workers
+3. go to ansible_use/inventory.yaml to write your worker address 
 
-4.got to /pipeline_code/producer got to /pipeline_code/worker change the hosts broker to your ip
+4. go to ansible_use/roles/install_prometheus/tasks/config  to add the ip of your workers
 
-5. run ansible-playbook -i inventory.yaml full.yaml
+5.got to /pipeline_code/worker/pipeline_script.py to change the hosts broker bd backend to your hosts ip
 
-6.
+5.run ansible-playbook -i inventory.yaml full.yaml
 
-
-tips: wrong with psycopg2??
+6.go to pipeline_code/producer,please run the command in this folder
+  1.python3.12 apply <the address of your experiments ids file.txt> <give a name of your output>
+  2.python3.12 get_results.py <the name> to get the output
+  3.python3.12 clean_output.py, to delete all output file in workers
+  tips:each name can only be used one times
