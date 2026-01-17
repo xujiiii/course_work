@@ -1,12 +1,19 @@
+- name: Make sure project root exists
+  ansible.builtin.file:
+    state: directory
+    path: "{{ project_root }}"
+    mode: '0777'
+    recurse: true
+  become: yes
 - name: copy pipeline code to workers
   ansible.builtin.copy:
-    src: "../pipeline_code/worker/pipeline_script.py"
-    dest: "/home/almalinux/pipeline_script.py"
+    src: "{{ pipeline_script }}"
+    dest: "{{ project_root }}/pipeline_script.py"
   become: true
   become_user: root
 - name: copy parser code to workers
   ansible.builtin.copy:
-    src: "../results_parser.py"
-    dest: "/home/almalinux/results_parser.py"
+    src: "{{ results_parser }}"
+    dest: "{{ project_root }}/results_parser.py"
   become: true 
   become_user: root

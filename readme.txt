@@ -1,10 +1,6 @@
-1.worker单独重启命令需要设置 ansible
-2.变量设置方法要中心化
-3.测试是否有重复结果出现，或是抢占同一id
-4.之前出现数据库连接失败，原因未知
-5.出现掉线 时，会导致整体的负载上升，可能原因是docker的问题
+1.worker单独重启命令需要设置 ansible  ok --limit
+4.之前出现数据库连接失败，原因未知  
 6.完善celery自动重启
-6.1celerypkill时不存在会报错，fixing
 7.完善hosts的rabbit，redis，celery，prometheus，flower重启
 8.完善posgresql重启
 9.写个将authority-key加入全部机器的ansible
@@ -18,3 +14,24 @@ test：
 4.tmux运行，推出vscode,有worker掉线(只有一个)，结果在不重新worker登录时正确  16个测试集
 5.第二次测试是否会掉线，二次测试没掉线，只要不在ssh连接worker，单纯在hosts上操作就不会掉线，maybe，
  prometheus和flower都在线，数据结果有微小区别
+
+1.
+sudo dnf install python3-pip
+python3 -m pip install --user ansible
+
+copy your ssh key to hosts
+chmod 400 comp
+
+2. sudo dnf install git
+3. go to ansible_use/inventory.yaml to write your worker address and ssh key location
+
+3.1 go to ansible_use/roles/install_prometheus/tasks/config  to add the ip of your workers
+
+4.got to /pipeline_code/producer got to /pipeline_code/worker change the hosts broker to your ip
+
+5. run ansible-playbook -i inventory.yaml full.yaml
+
+6.
+
+
+tips: wrong with psycopg2??

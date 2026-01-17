@@ -32,6 +32,13 @@
     name: postgresql
     state: started
   become: yes
+- name: Ensure pip packages are installed for Python 3.12
+  ansible.builtin.pip:
+    name:
+      - psycopg2
+    executable: pip3.12
+    state: present
+  become: yes
 - name: 给 postgres 用户设置密码
   community.general.postgresql_user:
     name: postgres

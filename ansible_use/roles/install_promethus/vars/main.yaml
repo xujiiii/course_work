@@ -1,6 +1,3 @@
 ---
 prom_version: "3.8.1"
-prom_home: "/home/almalinux/course/course_work/prom"  # 安装目录
-bin_dir: "/home/almalinux/course/course_work/prom/bin"      # 程序文件路径
-conf_dir: "/home/almalinux/course/course_work/prom/conf"    # 配置文件路径
-data_dir: "/home/almalinux/course/course_work/prom/data"    # 监控数据路径
+prom_home: "../prom"  # 安装目录

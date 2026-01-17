@@ -1,0 +1,1 @@
+this is to store celery logs

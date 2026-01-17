@@ -6,21 +6,20 @@
     state: present
   become: yes
 
-#- name: configure broker of flower
-#  shell: |
-#    celery --broker=amqp://pipeline:pipeline123@localhost:5672// flower
 - name: kill flower if already running
   ansible.builtin.shell:
     cmd: "fuser -k 5555/tcp || true"
   ignore_errors: yes
   become: yes
+  
 - name: start flower with nohup
   shell: |
     nohup celery -A pipeline_script flower \
+      --broker=amqp://pipeline:pipeline123@localhost:5672// \
       --address=0.0.0.0 \
-      --port=5555 > flower_startup.log 2>&1 &
+      --port=5555 > {{ flower_log }} 2>&1 &
   args:
-    chdir: "{{ project_path }}"
+    chdir: "{{ producer }}"
   async: 15
   poll: 0
 - name: 确认端口已启动

@@ -94,7 +94,6 @@
       autorefresh=1
       type=rpm-md
   become: yes
-# 2. 对应 dnf install -y logrotate
 - name: 安装 logrotate 依赖
   ansible.builtin.dnf:
       name: logrotate
@@ -105,9 +104,22 @@
     name: erlang
     state: present
   become: yes
+- name: 清理 DNF 缓存
+  command: dnf clean all
+  become: yes
+- name: 删除 DNF 缓存目录
+  file:
+    path: /var/cache/dnf
+    state: absent
+  become: yes
+
+- name: 重新建立元数据缓存
+  command: dnf makecache -y
+  become: yes
 - name: 清理 DNF 缓存数据
   ansible.builtin.dnf:
     update_cache: yes
+  become: yes
 - name: 安装 rabbitmq-server
   ansible.builtin.dnf:
     name: rabbitmq-server
@@ -130,4 +142,21 @@
 - name: Set RabbitMQ user permissions
   ansible.builtin.command: 
     rabbitmqctl set_permissions -p / pipeline ".*" ".*" ".*"
+  become: yes
+- name: enable rabbitmq_prometheus plugin
+  ansible.builtin.command: 
+    rabbitmq-plugins enable rabbitmq_prometheus
+  become: yes
+
+- name: copy configuration file to rabbitmq.conf
+  ansible.builtin.copy: 
+    src: "./rabbit.conf"
+    dest: "/etc/rabbitmq/rabbitmq.conf"
+    mode: '0755'
+  become: yes
+
+- name: restart rabbitmq-server
+  ansible.builtin.service:
+    name: rabbitmq-server
+    state: restarted
   become: yes

@@ -1,11 +1,2 @@
 names
-test
-test_restart
-test_one_restart
-test_tmux
-test_tmux_exist
-test_tmux_exist_2
-test_tmux_exist_whole
-test_repeat_fail_in_whole
-test_repeat_fail_in_whole_real
-test_miss
+te1

@@ -5,7 +5,7 @@ import sys
 import os
 from celery import chord,Celery
 import csv
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://localhost:6379/0')
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.219:5672//', backend='redis://localhost:6379/0')
 # python3.12 ./apply.py /home/almalinux/course/course_work/test_id.txt hiii
 #tmux new -s hhsearch "python3.12 ./apply.py /home/almalinux/course/course_work/experiment_ids.txt whole_results"
 #def apply(clean_line):
@@ -62,14 +62,11 @@ if __name__ == "__main__":
         sys.exit(1)
         
     with open(fasta_ids_location, 'r', encoding='utf-8') as file:
-        # 配置workflow任务的重试策略：最多重试3次，如果失败则触发重试
-        res = [workflow.s(line.strip(),output_table).set(queue='tasks', 
-                                                         retry=True, 
-                                                         retry_policy={'max_retries': 3}) 
+        # workflow任务的重试策略由@shared_task装饰器定义
+        res = [workflow.s(line.strip(),output_table).set(queue='tasks') 
                for line in file if line.strip()]
         reduce= reduce_worker.s(output_table).set(queue='map_broadcast')
         
-        full=chord(res)(reduce)
-        print(full.get()) 
+        chord(res)(reduce) 
     print(f"output table name is {output_table}")
 

@@ -1,12 +1,20 @@
+- name: Make sure project root exists
+  ansible.builtin.file:
+    state: directory
+    path: "{{ project_root }}"
+    mode: '0777'
+    recurse: true
+  become: yes
+
 - name: Check s4pred is present
-  stat: path={{ app_location }}/s4pread
+  stat: path="{{ project_root }}/s4pred/Applications/s4pread"
   register: s4pred_exist
   
 - name: Check out s4pred from GIT
   when: s4pred_exist.stat.exists == False
   git:
     repo: https://github.com/psipred/s4pred.git
-    dest: "{{ app_location }}/s4pred"
+    dest: "{{ project_root }}/s4pred/Applications/s4pred"
     clone: yes
     force: yes
 
@@ -14,17 +22,17 @@
   when: s4pred_exist.stat.exists == False
   ansible.builtin.get_url:
     url: http://bioinfadmin.cs.ucl.ac.uk/downloads/s4pred/weights.tar.gz
-    dest: "{{ app_location }}/s4pred/weights.tar.gz"
+    dest: "{{ project_root }}/s4pred/Applications/s4pred/weights.tar.gz"
   
-- name: Extract s4pred weights
+- name: Extract s4pred weights 
   when: s4pred_exist.stat.exists == False
   ansible.builtin.unarchive:
-    src: "{{ app_location }}/s4pred/weights.tar.gz"
-    dest: "{{ app_location }}/s4pred/"
+    src: "{{ project_root }}/s4pred/Applications/s4pred/weights.tar.gz"
+    dest: "{{ project_root }}/s4pred/Applications/s4pred/"
     remote_src: yes
     
 - name: remove weights tar.gz
   when: s4pred_exist.stat.exists == False
   ansible.builtin.file:
     state: absent
-    path: "{{ app_location }}/s4pred/weights.tar.gz"
+    path: "{{ project_root }}/s4pred/Applications/s4pred/weights.tar.gz"

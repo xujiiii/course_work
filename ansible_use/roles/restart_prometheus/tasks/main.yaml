@@ -3,7 +3,7 @@
     cmd: "fuser -k 9090/tcp || true"
 - name: start it again
   shell: |
-    nohup ./prometheus --config.file=prometheus.yml > prometheus.log 2>&1 &
+    nohup ./prometheus --config.file=prometheus.yml > {{ prom_logs }} 2>&1 &
   args:
     chdir: "{{ prom_location }}"
   async: 10

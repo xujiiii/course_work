@@ -6,7 +6,9 @@ from celery import chord,Celery
 from kombu.common import Broadcast
 import uuid
 import pandas as pd
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.57:5672//', backend='redis://10.134.12.57:6379/0')
+import math
+import pandas as pd
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.89:5672//', backend='redis://10.134.12.89:6379/0')
 
 app.conf.task_queues = (
     Broadcast('map_broadcast'), # 定义广播队列
@@ -25,15 +27,13 @@ def together(name):
     tasks = [
         get_results.apply_async(
             args=[None, name], 
-            queue='tasks',
-            options={'destination': [worker]} # 强制锁定到指定worker
+            queue=worker, # 强制锁定到指定worker
+            priority=9
         ) for worker in worker_names
     ]
     
     # 手动收集结果
-    res_list = [t.get(timeout=30) for t in tasks]
-    for re in res_list:
-        print(re)
+    res_list = [t.get(timeout=300) for t in tasks]
     
     if not res_list:
         print("错误：未接收到数据")
@@ -46,52 +46,31 @@ def together(name):
 
     # 1. 遍历收集
     for re in res_list:
-        # 合并详细记录
+        print(f'Received from worker: {re["worker"]}')
         try:
-            all_rows.extend(re['profile_output'])
-        except:
-            print('None appears')
+            output=re['output']
+        except KeyError:
+            print("Empty output from a worker, skipping.")
             continue
-        # 统计值加权计算
-        stats = re['hits_output']
-        c = stats['count']
-        if c > 0:
-            total_count += c
-            sum_w_std += stats['avg_std'] * c
-            sum_w_gmean += stats['avg_gmean'] * c
 
-    # 2. 计算全局平均值
-    final_std = sum_w_std / total_count if total_count > 0 else 0
-    final_gmean = sum_w_gmean / total_count if total_count > 0 else 0
+        all_rows.extend(output)
 
-    # --- 表格 1: 最终平均值汇总表 ---
-    summary_data = {
-        'Project_Name': [name],
-        'Total_Records': [total_count],
-        'Final_Avg_Std': [round(final_std, 4)],
-        'Final_Avg_Gmean': [round(final_gmean, 4)]
-    }
-    df_summary = pd.DataFrame(summary_data)
-    
-    # --- 表格 2: 合并后的详细记录表 ---
-    df_combined = pd.DataFrame(all_rows)
+    df=pd.DataFrame(all_rows)
+    df= df.sort_values(by='score_gmean', ascending=False)
+    df.drop_duplicates(subset=['query_id'], keep='first', inplace=True)
+    df.reset_index(drop=True,inplace=True)
 
-    # 3. 保存结果
-    summary_file = f"summary_{name}_metrics.csv"
-    combined_file = f"combined_{name}_data.csv"
-    
-    df_summary.to_csv(summary_file, index=False)
-    df_combined.to_csv(combined_file, index=False)
+    avg_gmean=df['score_gmean'].mean()
+    avg_std=df['score_std'].mean()
+    df_means = pd.DataFrame([{
+    'avg_gmean': avg_gmean,
+    'avg_std': avg_std
+    }])
+    df_means.to_csv(f"{name}_summary.csv",index=False)
 
-    # 4. 屏幕打印输出
-    print("\n--- 表格 1: 全局平均值 ---")
-    print(df_summary.to_string(index=False))
-    
-    print("\n--- 表格 2: 合并详细数据 (前5行) ---")
-    print(df_combined.head().to_string(index=False))
-    
-    print(f"\n[完成] 指标文件: {summary_file}")
-    print(f"[完成] 合并文件: {combined_file}")
+    df=df[["query_id","best_hit"]]
+    df.rename(columns={"query_id": "fasta_id", "best_hit": "hit_id"}, inplace=True)
+    df.to_csv(f"{name}_hits.csv",index=False)
     
 if __name__ == "__main__":
     name=sys.argv[1]
