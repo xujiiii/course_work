@@ -1,0 +1,2 @@
+---
+celery_cmd: celery -A pipeline_script worker  -Q celery@{{ ansible_host }},tasks,map_broadcast  --hostname="celery@{{ ansible_host }}" --loglevel=info   --concurrency=2   --prefetch-multiplier=1 -E
