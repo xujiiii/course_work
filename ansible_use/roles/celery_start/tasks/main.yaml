@@ -1,6 +1,8 @@
 - name: wait 5 seconds to ensure celery know the worker is killed
   ansible.builtin.pause:
     seconds: 5
+- debug:
+    msg: "real ip: {{ ansible_host }}"
 - name: start celery with nohup
   ansible.builtin.shell: 
     cmd: "nohup {{ celery_cmd }} > celery_stdout.log 2>&1 &"
@@ -12,3 +14,4 @@
       
 - debug:
     msg: "Celery 运行状态: {{ celery_status.stdout }}"
+
