@@ -33,12 +33,14 @@ def together(name):
     ]
     
     # 手动收集结果
+    
     res_list = [t.get(timeout=300) for t in tasks]
     
     if not res_list:
         print("错误：未接收到数据")
         return
-
+    
+    print(res_list)
     all_rows = []
     total_count = 0
     sum_w_std = 0
@@ -46,6 +48,9 @@ def together(name):
 
     # 1. 遍历收集
     for re in res_list:
+        if not re:
+            print("Warning: Received empty result from a worker, skipping.")
+            continue
         print(f'Received from worker: {re["worker"]}')
         try:
             output=re['output']
@@ -54,8 +59,11 @@ def together(name):
             continue
 
         all_rows.extend(output)
-
+    
     df=pd.DataFrame(all_rows)
+    if df.empty:
+        print("No data in received results,plese check if the name of output is correct")
+        return
     df= df.sort_values(by='score_gmean', ascending=False)
     df.drop_duplicates(subset=['query_id'], keep='first', inplace=True)
     df.reset_index(drop=True,inplace=True)
