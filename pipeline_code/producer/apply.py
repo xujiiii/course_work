@@ -5,7 +5,7 @@ import sys
 import os
 from celery import chord,Celery
 import csv
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.219:5672//', backend='redis://localhost:6379/0')
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@localhost:5672//', backend='redis://localhost:6379/0')
 # python3.12 ./apply.py /home/almalinux/course/course_work/test_id.txt hiii
 #tmux new -s hhsearch "python3.12 ./apply.py /home/almalinux/course/course_work/experiment_ids.txt whole_results"
 #def apply(clean_line):
