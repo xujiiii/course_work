@@ -18,17 +18,15 @@ test：
 1.
 sudo dnf install python3-pip
 python3 -m pip install --user ansible
-
 copy your ssh key to hosts
 chmod 600 comp
 
 2. sudo dnf install git
-
+   git clone <>
+   
 3. go to ansible_use/inventory.yaml to write your worker address 
 
-4. go to ansible_use/roles/install_prometheus/tasks/config  to add the ip of your workers
-
-5.got to /pipeline_code/worker/pipeline_script.py to change the hosts broker bd backend to your hosts ip
+4.got to /pipeline_code/worker/pipeline_script.py to change the hosts broker bd backend to your hosts ip
 
 5.run ansible-playbook -i inventory.yaml full.yaml
 
