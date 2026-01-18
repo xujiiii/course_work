@@ -2,9 +2,7 @@
   ansible.builtin.file:
     state: directory
     path: "{{ project_root }}"
-    mode: '0777'
-    recurse: true
-  become: yes
+    mode: '0755'
 
 - name: Check s4pred is present
   stat: path="{{ project_root }}/s4pred/Applications/s4pread"
