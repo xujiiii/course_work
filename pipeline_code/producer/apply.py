@@ -8,15 +8,7 @@ import csv
 app = Celery('tasks', broker='amqp://pipeline:pipeline123@localhost:5672//', backend='redis://localhost:6379/0')
 # python3.12 ./apply.py /home/almalinux/course/course_work/test_id.txt hiii
 #tmux new -s hhsearch "python3.12 ./apply.py /home/almalinux/course/course_work/experiment_ids.txt whole_results"
-#def apply(clean_line):
- #   workflow.apply_async(args=[clean_line], queue='tasks')
-#ps aux
 
-'''
-1.创建前chain的第一个函数将nfs里面的储存文件夹创建好，
-2.每个worker运行pipeline并把{fastaid}.out写进nfs里面
-3.最后由一个worker计算出最终的output table返回给hosts
-'''
 def check():
     filename="output_name.csv"
     if not os.path.exists(filename): 
@@ -24,9 +16,9 @@ def check():
         with open(filename, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(["names"])
-        print(f"文件 '{filename}' 不存在，已成功创建。")
+        print(f"File '{filename}' is created successfully.")
     else:
-        print(f"文件 '{filename}' 已存在，无需创建。")
+        print(f"File '{filename}' already exists")
        
 def check_output_name(name): 
     filename="output_name.csv"
@@ -38,14 +30,14 @@ def check_output_name(name):
         for row in reader:
             if row[col_name] == str(value):
                 exists = True
-                print(f"信息：{value} 已存在于 {filename} 中,请更换名字，或运行clean_output.py删除全部数据")
+                print(f"Output name：{value} exists in {filename} ,please change the output name，or use clean_output.py")
                 return True
 
     # 2. 如果不存在，直接追加
     with open(filename, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow([value])
-    print(f"Done: {value} 插入成功")
+    print(f"Done: {value} is valid output name")
     return False
     
     
@@ -68,5 +60,5 @@ if __name__ == "__main__":
         reduce= reduce_worker.s(output_table).set(queue='map_broadcast')
         
         chord(res)(reduce) 
-    print(f"output table name is {output_table}")
+    print(f"output table name is {output_table}, please use grafana/flower to check the progress")
 
