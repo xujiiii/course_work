@@ -1,4 +1,3 @@
-#from pipeline_script import read_input, run_s4pred, read_horiz, run_hhsearch, run_parser, derive_fasta_from_db, create_folder
 from pipeline_script import workflow,reduce_worker
 from celery import chain
 import sys
@@ -10,6 +9,13 @@ app = Celery('tasks', broker='amqp://pipeline:pipeline123@localhost:5672//', bac
 #tmux new -s hhsearch "python3.12 ./apply.py /home/almalinux/course/course_work/experiment_ids.txt whole_results"
 
 def check():
+    """Create output_name.csv if it doesn't exist.
+    
+    Each output name can only be used once,
+    ouput_name.csv is to store the output names that have been used.
+    This function ensure the output_name.csv exists.
+    
+    """
     filename="output_name.csv"
     if not os.path.exists(filename): 
         # 创建文件并写入表头（可选）
@@ -21,6 +27,17 @@ def check():
         print(f"File '{filename}' already exists")
        
 def check_output_name(name): 
+    '''Check if output name was used
+    
+    if output name is used, it will 
+    
+    Args:
+        name: The output name user used o represent the tasks
+        
+    Return:
+        True : if name was used before.
+        False: if name wasn't used before.
+    '''
     filename="output_name.csv"
     col_name="names"
     value=str(name)
@@ -60,5 +77,5 @@ if __name__ == "__main__":
         reduce= reduce_worker.s(output_table).set(queue='map_broadcast')
         
         chord(res)(reduce) 
-    print(f"output table name is {output_table}, please use grafana/flower to check the progress")
+    print(f"output table name is {output_table}, please use grafana/flower to check the progress of running")
 

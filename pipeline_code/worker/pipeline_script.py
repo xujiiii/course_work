@@ -20,9 +20,9 @@ import fcntl
 import time
 import pandas as pd
 import socket
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.189:5672//', backend='redis://10.134.12.189:6379/0')
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.237:5672//', backend='redis://10.134.12.237:6379/0')
 app.conf.task_queues = (
-    Broadcast('map_broadcast'), # 定义广播队列
+    Broadcast('map_broadcast'), 
 )
 
 logger = get_task_logger(__name__)
@@ -31,10 +31,7 @@ logger = get_task_logger(__name__)
 # celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
 #--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
 # pkill -HUP -f "celery" kill celey
-"""
-usage: python pipeline_script.py INPUT.fasta  
-approx 5min per analysis
-"""
+
 
 tmp_file = "tmp.fas"
 horiz_file = "tmp.horiz"
@@ -184,7 +181,7 @@ def run_s4pred(location):
     return location
 
 def read_input(location):
-    """
+    """Derived 
     Function reads a fasta formatted file of protein sequences
     """
     logger.info("step2:READING FASTA FILES")
@@ -208,14 +205,22 @@ def read_input(location):
     return location
 
 def derive_fasta_from_db(fasta_id):
+    """Select the amino acid sequence with given id in posgresql 
+    
+    Args:
+        fasta_id:
+    
+    Returns:
+        os.path.join("/tmp/pipeline", fasta_id):
+    """
     logger.info(f"Step1:Get the fasta file {fasta_id} form posgresql")
     workername = socket.gethostname()
-    #log in posgresql
+    #Log in posgresql
     try:
         conn = psycopg2.connect(
             database="pipeline",
             user="postgres",
-            host="127.0.0.1", # 如果是远程连接需要指定
+            host="127.0.0.1", 
             password="pipeline123",
         )
         cur = conn.cursor()
@@ -250,8 +255,18 @@ def derive_fasta_from_db(fasta_id):
     return os.path.join("/tmp/pipeline", fasta_id)
 
 def create_folder(fasta_id,output_location):
-    """
-    Create a folder to run the pipeline with given id 
+    """Create the folders to store all results and to run the one task with specific fasta_id
+    
+    Make sure the folder to store all results exists, which is tmp/pipeline_output/output_location
+    Also create a folder tmp/pipeline/fasta_id for the task with specific protein to run the pipeline
+    
+    Args:
+        fasta_id: The fasta id of the protein to run the whole pipeline
+        output_location: The same as the output name user run apply.py, 
+            which is the folder under /tmp/pipeline_output to store results.
+    
+    Returns:
+        fasta_id: The same as input, which will be passed to the next function in workflow.
     """
     
     logger.info(f"Step0:Creating folder for pipeline run: {fasta_id}")
@@ -266,8 +281,18 @@ def create_folder(fasta_id,output_location):
 
 @shared_task(bind=True, acks_late=True, autoretry_for=(Exception,),task_reject_on_worker_lost=True, max_retries=2, default_retry_delay=10)
 def workflow(self,fasta_id,output_location):
-    """
-    The complete pipeline workflow with failure recovery
+    """The complete pipeline workflow with failure recovery
+    
+
+    Args:
+        self: An instance of celery.app.task.Task set by @shared_task(bind=True...)
+        fasta_id: The fasta id of the protein to run the whole pipeline
+        output_location: The same as the output name user run apply.py, 
+            which is the folder under /tmp/pipeline_output to store results.
+        
+    Returns:
+
+        
     
     失败时会自动重试，最多重试1次，每次重试间隔10秒
     """
@@ -287,7 +312,7 @@ def workflow(self,fasta_id,output_location):
 
 def clear_folder_contents(folder_path):
     """
-    删除指定文件夹下的所有内容（文件和子文件夹），但保留根目录本身。
+    Delete all files under a folder
     """
     path = Path(folder_path)
     
@@ -313,15 +338,14 @@ def clear_folder_contents(folder_path):
 #before celery started,it will clean the work folder /tmp/pipeline
 @worker_init.connect
 def bootstrap_worker(sender, **kwargs):
-    """
+    """This function will run every time every time worker restart
     sender: 指向当前的 Worker 实例
+    
     这个函数会在每个 Worker 进程启动后、开始接收任务前执行
     """
-    print(f"信号触发：Worker {sender} 正在进行前置准备...")
-    
+    logger.info(f"信号触发：Worker {sender} 正在进行前置准备...")
     clear_folder_contents("/tmp/pipeline")
-    
-    print(f"Worker {sender} is ready, work folder is clean")
+    logger.info(f"Worker {sender} is ready, work folder is clean")
 
 @shared_task(bind=True)
 def clean_pipeline_output(self):
@@ -331,7 +355,7 @@ def clean_pipeline_output(self):
     folder_path="/tmp/pipeline_output"
     if not os.path.exists(folder_path):
         print(f"目录 {folder_path} 不存在，跳过清理。")
-        return
+        return f"{folder_path} do not exists, don't need clean"
 
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -349,6 +373,7 @@ def clean_pipeline_output(self):
 
 @shared_task(bind=True)
 def get_results(self,msg,name):
+
     hostname = socket.gethostname()
     local_path = f"/tmp/pipeline_output/{name}"
     search_path = os.path.join(local_path, "*.out")
@@ -372,3 +397,21 @@ def get_results(self,msg,name):
         "worker": hostname,
         "output": df_out[['query_id', 'best_hit','score_std','score_gmean']].to_dict('records')
         }
+    
+    """简短的一句话总结函数作用。
+
+    这里可以写详细的描述。如果函数逻辑很复杂，
+    可以在这里解释它的工作原理、背景或者是为什么这么写。
+
+    Args:
+        worker_name: 目标 Worker 的名称，例如 "worker1_10.134.12.241"。
+        limit: 每次获取日志的最大行数。默认为 100。
+
+    Returns:
+        返回一个包含日志字符串的列表。例如：
+        ["Starting...", "Running task...", "Success"]
+
+    Raises:
+        ConnectionError: 当无法连接到目标 Worker 节点时抛出。
+        ValueError: 当 limit 参数小于 0 时抛出。
+    """    
