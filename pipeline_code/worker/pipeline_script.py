@@ -26,12 +26,6 @@ app.conf.task_queues = (
 )
 
 logger = get_task_logger(__name__)
-#ps aux | grep celery
-#celery -A pipeline_script worker   -Q tasks,map_broadcast   --loglevel=info   --concurrency=1   --prefetch-multiplier=1
-# celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
-#--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
-# pkill -HUP -f "celery" kill celey
-
 
 tmp_file = "tmp.fas"
 horiz_file = "tmp.horiz"
@@ -46,7 +40,7 @@ def reduce_worker(self,msg,output_file):
     all_files = glob.glob(search_path)
     
     if not all_files:
-        print("未找到任何 .out 文件")
+        logger.info("未找到任何 .out 文件")
         return
 
     # 2. 读取并合并
@@ -77,10 +71,21 @@ def reduce_worker(self,msg,output_file):
     return "hahahahaah"
 
 def run_parser(location,output_location,fasta_id):
+    """Run the results_parser.py over the hhr file to produce the output summary
+    
+    Derived hhr_parse.out from tmp.hhr under location(like /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE')
+    
+    Args:
+        location: It is the locatoion for one protein to run the whole pipeline and store the middle output during running.
+            For example, /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'.
+        fasta_id: The fasta id of the protein to run the whole pipeline
+        output_location: The same as the output name user run apply.py, 
+            which is the folder under /tmp/pipeline_output to store results.
+    
+    Returns:
+        location: The same as arg location.    
     """
-    Run the results_parser.py over the hhr file to produce the output summary
-    """
-    #hhr=os.path.join(location,hhr_file)
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
     fuc_location=os.path.join(base_dir,'results_parser.py')
 
@@ -98,10 +103,19 @@ def run_parser(location,output_location,fasta_id):
 
 
 def run_hhsearch(location):
+    """Run HHSearch to produce the hhr file
+    
+    For example,it will use Docker to apply HHsearch with given search target 
+    to derive a new tmp.hhr file from tmp.a3m under location folder(like /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE')
+    
+    Args:
+        location: It is the locatoion for one protein to run the whole pipeline and store the middle output during running.
+            For example, /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'.
+            
+    Returns:
+        location: The same as arg location.    
     """
-    Run HHSearch to produce the hhr file
-    """
-    #hhsearch_location='/data/student/miniforge3/envs/test_xu/bin/hhsearch'
+
     global a3m_file
     base_dir = os.path.dirname(os.path.abspath(__file__))
     search_data='Data/pdb70/pdb70'
@@ -125,8 +139,15 @@ def run_hhsearch(location):
 
 
 def read_horiz(location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
-    """
-    Parse horiz file and concatenate the information to a new tmp a3m file
+    """Parse horiz file and concatenate the information to a new tmp a3m file
+    
+    Derived /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.a3m from /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.horiz 
+    
+    Args:
+        location: It is the locatoion for one protein to run the whole pipeline and store the middle output during running.
+            For example, /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'.
+    Returns:
+        location: The same as arg location.    
     """
     global tmp_file, horiz_file, a3m_file
     pred = ''
@@ -152,8 +173,17 @@ def read_horiz(location):#(self,horiz_file, tmp_file,a3m_file,*args, **kwargs):
     return location
 
 def run_s4pred(location):
-    """
-    Runs the s4pred secondary structure predictor to produce the horiz file
+    """Runs the s4pred secondary structure predictor to produce the horiz file
+    
+    For example, creates /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.horiz
+    from /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.fas
+    
+    Args:
+        location: It is the locatoion for one protein to run the whole pipeline and store the middle output during running.
+            For example, /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'.
+        
+    Returns:
+        location: The same as arg location.   
     """
     workername = socket.gethostname()
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -181,37 +211,50 @@ def run_s4pred(location):
     return location
 
 def read_input(location):
-    """Derived 
-    Function reads a fasta formatted file of protein sequences
+    """Function reads a fasta formatted file of protein sequences 
+    
+    For example, the function creates /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.fas 
+    from /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.fasta
+    
+    Args:
+        location: It is the locatoion for one protein to run the whole pipeline and store the middle output during running.
+            For example, /tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'.
+        
+    Returns:
+        location: The same as arg location.
     """
     logger.info("step2:READING FASTA FILES")
-    file=os.path.join(location,"tmp.fas")
+    input_file=os.path.join(location,"tmp.fasta")
+    output_file=os.path.join(location,"tmp.fas")
     sequences = {}
     ids = []
-    for record in SeqIO.parse(file, "fasta"):
+    for record in SeqIO.parse(input_file, "fasta"):
         sequences[record.id] = record.seq
         ids.append(record.id)
         
     for k, v in (sequences).items(): 
         logger.info(f'Now analysing input: {k}')
-        with open(file, "w") as fh_out:
+        with open(output_file, "w") as fh_out:
             fh_out.write(f">{k}\n") 
             fh_out.write(f"{v}\n")
     
-    if not os.path.exists(file):
-        logger.error(f'Fasta file not found at {file}')
-        raise FileNotFoundError(f'{file} not found,error in read_input function')
+    if not os.path.exists(input_file):
+        logger.error(f'Fasta file not found at {input_file}')
+        raise FileNotFoundError(f'{input_file} not found,error in read_input function')
     
     return location
 
 def derive_fasta_from_db(fasta_id):
     """Select the amino acid sequence with given id in posgresql 
     
+    The sequence will be selected and store as /tmp/pipeline/fasta_id/tmp.fasta
+    
     Args:
-        fasta_id:
+        fasta_id: The id of the protein to run the whole pipeline.
     
     Returns:
-        os.path.join("/tmp/pipeline", fasta_id):
+        os.path.join("/tmp/pipeline", fasta_id): It is the locatoion for one protein to run the whole pipeline
+            and store the middle output during running.
     """
     logger.info(f"Step1:Get the fasta file {fasta_id} form posgresql")
     workername = socket.gethostname()
@@ -225,8 +268,8 @@ def derive_fasta_from_db(fasta_id):
         )
         cur = conn.cursor()
     except Exception as e:
-        logger.error(f"{workername} 无法连接到数据库: {e}")
-        raise e(f"{workername} 无法连接到数据库: {e}")
+        logger.error(f"{workername} failed to connect to database: {e}")
+        raise e(f"{workername} failed to connect to database: {e}")
     
     try:
         # 2. 执行查询 (使用占位符 %s 防止 SQL 注入)
@@ -244,7 +287,7 @@ def derive_fasta_from_db(fasta_id):
             logger.info(fasta_content)
             
             # 写入文件
-            with open(f"/tmp/pipeline/{fasta_id}/tmp.fas", "w") as f:
+            with open(f"/tmp/pipeline/{fasta_id}/tmp.fasta", "w") as f:
                 f.write(fasta_content)
     except Exception as e:
         if 'cur' in locals(): cur.close()
@@ -257,11 +300,13 @@ def derive_fasta_from_db(fasta_id):
 def create_folder(fasta_id,output_location):
     """Create the folders to store all results and to run the one task with specific fasta_id
     
-    Make sure the folder to store all results exists, which is tmp/pipeline_output/output_location
-    Also create a folder tmp/pipeline/fasta_id for the task with specific protein to run the pipeline
+    Make sure the folder to store all results exists, which is tmp/pipeline_output/output_location,
+    for example, tmp/pipeline_output/test_fasta
+    Also create a folder tmp/pipeline/fasta_id for the task with specific protein to run the pipeline.
+    for example, tmp/pipeline/'sp|Q80US4|ARP5_MOUSE'/tmp.fasta
     
     Args:
-        fasta_id: The fasta id of the protein to run the whole pipeline
+        fasta_id: The id of the protein to run the whole pipeline.
         output_location: The same as the output name user run apply.py, 
             which is the folder under /tmp/pipeline_output to store results.
     
@@ -386,9 +431,7 @@ def get_results(self,msg,name):
     # 使用列表推导式一次性读取所有文件
     df_list = [pd.read_csv(f) for f in all_files]
     combined_df = pd.concat(df_list, ignore_index=True)
-
     combined_df.to_csv(os.path.join(local_path, "output.csv"), index=False)
-
     output = f"{local_path}/output.csv"
     df_out = pd.read_csv(output)
 
