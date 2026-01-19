@@ -15,6 +15,13 @@ test：
 5.第二次测试是否会掉线，二次测试没掉线，只要不在ssh连接worker，单纯在hosts上操作就不会掉线，maybe，
  prometheus和flower都在线，数据结果有微小区别
 
+#ps aux | grep celery
+#celery -A pipeline_script worker   -Q tasks,map_broadcast   --loglevel=info   --concurrency=1   --prefetch-multiplier=1
+# celery -A pipeline_script worker   -Q tasks   --loglevel=info   --concurrency=2   --prefetch-multiplier=1
+#--concurrency=2,让一个worker同时处理两个chain，--prefetch-multiplier=1，防止worker预取过多任务，一个worker最多取一个
+# pkill -HUP -f "celery" kill celey
+
+
 1.
 sudo dnf install python3-pip
 python3 -m pip install --user ansible
