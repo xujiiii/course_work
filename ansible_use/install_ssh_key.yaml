@@ -1,0 +1,4 @@
+---
+- hosts: mymachines
+  roles:
+    - install_ssh_key
