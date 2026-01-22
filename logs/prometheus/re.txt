@@ -1,1 +1,1 @@
-this is to store celery logs
+This folder is to store initialization logs of Prometheus.
