@@ -1,1 +1,1 @@
-This folder is to store initialization logs og flower.
+This folder is to store initialization logs of flower.
