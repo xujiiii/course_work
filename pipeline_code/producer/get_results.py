@@ -44,7 +44,6 @@ def together(name):
     total_count = 0
     sum_w_std = 0
     sum_w_gmean = 0
-
     
     for re in res_list:
         if not re:
@@ -66,7 +65,6 @@ def together(name):
     df= df.sort_values(by='score_gmean', ascending=False)
     df.drop_duplicates(subset=['query_id'], keep='first', inplace=True)
     df.reset_index(drop=True,inplace=True)
-
     avg_gmean=df['score_gmean'].mean()
     avg_std=df['score_std'].mean()
     df_means = pd.DataFrame([{
@@ -78,6 +76,7 @@ def together(name):
     df.rename(columns={"query_id": "fasta_id", "best_hit": "best_hit_id"}, inplace=True)
     df.to_csv(f"{name}_hits_output.csv",index=False)
     print(f"{name}_hits_output.csv and {name}_profile_output.csv are created sucessfully")
+
 if __name__ == "__main__":
     try:
         name=sys.argv[1]

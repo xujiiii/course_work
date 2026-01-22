@@ -54,7 +54,6 @@ def check_output_name(name):
     return False
     
     
-
 if __name__ == "__main__":
     fasta_ids_location=sys.argv[1]
     output_table=sys.argv[2]
