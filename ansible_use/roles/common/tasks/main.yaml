@@ -1,16 +1,16 @@
-- name: 清理 DNF 缓存
+- name: Clean DNF cache
   command: dnf clean all
   become: yes
 
-- name: 删除 DNF 缓存目录
+- name: Clear DNF cache directory
   file:
     path: /var/cache/dnf
     state: absent
   become: yes
-- name: 重新建立元数据缓存
+- name: Refresh DNF cache
   command: dnf makecache -y
   become: yes
-- name: 清理 DNF 缓存数据
+- name: Update DNF cache
   ansible.builtin.dnf:
     update_cache: yes
   become: yes

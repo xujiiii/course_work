@@ -22,7 +22,7 @@
     chdir: "{{ producer }}"
   async: 15
   poll: 0
-- name: 确认端口已启动
+- name: Ensure flower is running
   wait_for:
     port: 5555
     delay: 2

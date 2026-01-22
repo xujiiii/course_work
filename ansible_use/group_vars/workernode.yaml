@@ -1,5 +1,5 @@
 ---
-celery_cmd: celery -A pipeline_script worker  -Q celery@$(hostname),tasks,map_broadcast  --loglevel=info   --concurrency=2   --prefetch-multiplier=1 -E
 #location of the fasta file in hosts machine
 local_fasta_path: "../UP000000589_10090.fasta"
+#please set your project root directory here
 project_root: "/home/almalinux/pipeline"

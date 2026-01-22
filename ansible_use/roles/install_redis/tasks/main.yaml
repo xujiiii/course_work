@@ -11,13 +11,13 @@
       enabled=1
       gpgcheck=1
   become: yes
-- name: 下载 Redis GPG Key
+- name: Download Redis GPG Key
   get_url:
     url: https://packages.redis.io/gpg
     dest: /tmp/redis.key
     mode: '0644'
   become: yes
-- name: 导入 Redis GPG Key
+- name: import Redis GPG Key
   rpm_key:
     state: present
     key: /tmp/redis.key
@@ -27,7 +27,7 @@
     name: redis
     state: present
   become: yes
-- name: 强制杀死所有 Redis 进程
+- name: Kill all existing Redis processes
   shell: "pkill -9 -x redis-server || true"
   ignore_errors: yes
   become: yes
@@ -37,7 +37,7 @@
     state: started
     enabled: yes
   become: yes
-- name: 将 protected-mode 改为 no
+- name: Set protected-mode to no
   lineinfile:
     path: /etc/redis/redis.conf
     # 正则解释：匹配开头可能是空格或注释符(#)，紧跟 protected-mode，后面是 yes

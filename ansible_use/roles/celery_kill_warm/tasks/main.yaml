@@ -1,6 +1,6 @@
-- name: kill celery by pkill
+- name: kill celery by pkill warmly
   ansible.builtin.shell: "pkill -o -f 'celery'"
-  failed_when: false #忽略错误，即使没有找到进程也不会报错 
+  failed_when: false 
 - name: wait 1 seconds to ensure celery know the worker is killed
   ansible.builtin.pause:
     seconds: 1

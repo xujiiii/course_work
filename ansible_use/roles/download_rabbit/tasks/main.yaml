@@ -1,14 +1,14 @@
-- name: 导入 RabbitMQ 签名密钥
+- name: import RabbitMQ key
   ansible.builtin.rpm_key:
     state: present
     key: https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc
   become: yes
-- name: 导入 erlang 签名密钥
+- name: import erlang key
   ansible.builtin.rpm_key:
     state: present
     key: 'https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key'
   become: yes
-- name: 导入 RabbitMQ server 签名密钥
+- name: import RabbitMQ server key
   ansible.builtin.rpm_key:
     state: present
     key: 'https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-server.9F4587F226208342.key'
@@ -94,33 +94,32 @@
       autorefresh=1
       type=rpm-md
   become: yes
-- name: 安装 logrotate 依赖
+- name: install logrotate 
   ansible.builtin.dnf:
       name: logrotate
       state: present
   become: yes
-- name: 安装 erlang
+- name: install erlang
   ansible.builtin.dnf:
     name: erlang
     state: present
   become: yes
-- name: 清理 DNF 缓存
+- name: clean DNF cache
   command: dnf clean all
   become: yes
-- name: 删除 DNF 缓存目录
+- name: Clean DNF cache directory
   file:
     path: /var/cache/dnf
     state: absent
   become: yes
-
-- name: 重新建立元数据缓存
+- name: Refresh DNF cache
   command: dnf makecache -y
   become: yes
-- name: 清理 DNF 缓存数据
+- name: Update DNF cache data
   ansible.builtin.dnf:
     update_cache: yes
   become: yes
-- name: 安装 rabbitmq-server
+- name: install rabbitmq-server
   ansible.builtin.dnf:
     name: rabbitmq-server
     state: present

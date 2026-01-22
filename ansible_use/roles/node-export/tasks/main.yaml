@@ -1,22 +1,22 @@
-- name: 创建 node_exporter 用户 (不允许登录，更安全)
+- name: Create node_exporter user (cant log in)
   user:
     name: node_exporter
     shell: /sbin/nologin
     system: yes
     state: present
   become: yes
-- name: 下载 node_exporter 二进制包
+- name: download node_exporter 
   get_url:
     url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
     dest: "/tmp/node_exporter.tar.gz"
   become: yes
-- name: 解压安装包
+- name: extract node_exporter archive
   unarchive:
     src: "/tmp/node_exporter.tar.gz"
     dest: "/tmp"
     remote_src: yes
   become: yes
-- name: 拷贝二进制文件到系统路径
+- name: Copy node_exporter binary to /usr/local/bin
   copy:
     src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
     dest: "/usr/local/bin/node_exporter"
@@ -25,7 +25,7 @@
     owner: node_exporter
     group: node_exporter
   become: yes
-- name: 创建 Systemd 服务文件 (确保自动重启)
+- name: Set up systemd service for node-export
   copy:
     dest: /etc/systemd/system/node_exporter.service
     content: |
@@ -43,14 +43,14 @@
       [Install]
       WantedBy=multi-user.target
   become: yes
-- name: 重新加载 Systemd 并启动服务
+- name: Start the service of node-export
   systemd:
     name: node_exporter
     state: restarted
     enabled: yes
     daemon_reload: yes
   become: yes
-- name: 验证服务端口 (9100) 是否开启
+- name: Check node-export is running
   wait_for:
     port: 9100
     timeout: 5

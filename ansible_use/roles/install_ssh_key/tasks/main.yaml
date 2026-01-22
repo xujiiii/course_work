@@ -1,0 +1,5 @@
+- name: copy lecture_key.pub to all mahchines
+  ansible.posix.authorized_key:
+    user: almalinux
+    state: present
+    key: "{{ lookup('file', '../keys/lecture_key.pub') }}"

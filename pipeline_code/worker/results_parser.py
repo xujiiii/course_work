@@ -20,6 +20,5 @@ fhOut.write("query_id,best_hit,best_evalue,best_score,score_mean,score_std,score
 mean=format(np.mean(good_hit_scores), ".2f")
 std=format(np.std(good_hit_scores), ".2f")
 g_mean=format(gmean(good_hit_scores), ".2f")
-
 fhOut.write(f"{id},{best_hit[0]},{best_hit[1]},{best_hit[2]},{mean},{std},{g_mean}\n")
 fhOut.close()

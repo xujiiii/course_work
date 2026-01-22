@@ -1,4 +1,4 @@
-from pipeline_script import get_results#,together
+from pipeline_script import get_results
 from celery import chain,group
 import sys
 import os
@@ -8,44 +8,47 @@ import uuid
 import pandas as pd
 import math
 import pandas as pd
-app = Celery('tasks', broker='amqp://pipeline:pipeline123@10.134.12.89:5672//', backend='redis://10.134.12.89:6379/0')
-
+app = Celery('tasks', broker='amqp://pipeline:pipeline123@localhost:5672//', backend='redis://localhost:6379/0')
 app.conf.task_queues = (
-    Broadcast('map_broadcast'), # 定义广播队列
+    Broadcast('map_broadcast'), 
 )
 
-
 def together(name):
-    #ress=get_results.apply_async(args=[None,name], queue='map_broadcast')
+    """Get results and create two results file in producer folder
+    
+    After receiving the output from each online worker,aggregation will be applied. 
+    Two file name.hits_output.csv and name_profile_output.csv will be created under producer folder.
+    
+    Args:
+        name: The output name user used to represent the tasks, the same as the name used to run apply.py
+    """
     inspect = app.control.inspect()
     nodes = inspect.active_queues()
     worker_names = sorted(list(set(nodes.keys())))
-    #worker_names = list(nodes.keys())
     print(f"Detected workers: {worker_names}")
-    # 关键：手动建立 Group，但通过 destination 锁定每台机器
-    # 这样 worker-02 绝对抢不到发给 worker-05 的任务
     tasks = [
         get_results.apply_async(
-            args=[None, name], 
-            queue=worker, # 强制锁定到指定worker
+            args=[name], 
+            queue=worker, 
             priority=9
         ) for worker in worker_names
     ]
-    
-    # 手动收集结果
     res_list = [t.get(timeout=300) for t in tasks]
-    
-    if not res_list:
-        print("错误：未接收到数据")
-        return
 
+    if not res_list:
+        print("Errors: Not data received")
+        return
+    
+    
     all_rows = []
     total_count = 0
     sum_w_std = 0
     sum_w_gmean = 0
-
-    # 1. 遍历收集
+    
     for re in res_list:
+        if not re:
+            print("Warning: Received empty result from a worker, skipping.")
+            continue
         print(f'Received from worker: {re["worker"]}')
         try:
             output=re['output']
@@ -54,25 +57,31 @@ def together(name):
             continue
 
         all_rows.extend(output)
-
+    
     df=pd.DataFrame(all_rows)
+    if df.empty:
+        print("No data in received results,plese check if the name of output is correct")
+        sys.exit(1)
     df= df.sort_values(by='score_gmean', ascending=False)
     df.drop_duplicates(subset=['query_id'], keep='first', inplace=True)
     df.reset_index(drop=True,inplace=True)
-
     avg_gmean=df['score_gmean'].mean()
     avg_std=df['score_std'].mean()
     df_means = pd.DataFrame([{
     'avg_gmean': avg_gmean,
     'avg_std': avg_std
     }])
-    df_means.to_csv(f"{name}_summary.csv",index=False)
-
+    df_means.to_csv(f"{name}_profile_ouput.csv",index=False)
     df=df[["query_id","best_hit"]]
-    df.rename(columns={"query_id": "fasta_id", "best_hit": "hit_id"}, inplace=True)
-    df.to_csv(f"{name}_hits.csv",index=False)
-    
+    df.rename(columns={"query_id": "fasta_id", "best_hit": "best_hit_id"}, inplace=True)
+    df.to_csv(f"{name}_hits_output.csv",index=False)
+    print(f"{name}_hits_output.csv and {name}_profile_output.csv are created sucessfully")
+
 if __name__ == "__main__":
-    name=sys.argv[1]
+    try:
+        name=sys.argv[1]
+    except IndexError as e:
+        print("Errors: Please give exact one argument of name of output you want to get")
+        sys.exit(1)
     together(name)
     

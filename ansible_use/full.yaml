@@ -4,6 +4,7 @@
     - common
     - openmpi
     - py312
+    - install_ssh_key
 
 - hosts: workernode
   roles:
