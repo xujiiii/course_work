@@ -1,5 +1,9 @@
 ---
-#location of the fasta file in hosts machine
+#Location of the fasta file in hosts machine,
+#Workers will store this file in posgresql,
+#Please make sure it including all sequence you need to run pipeline
 local_fasta_path: "../UP000000589_10090.fasta"
-#please set your project root directory here
+#Please set your project root directory here,
+#Workers will download all project files in this folder 
+#Folowing is default
 project_root: "/home/almalinux/pipeline"
